@@ -39,6 +39,18 @@
  * Description:
  *      fota sample application
  ****************************************************************************/
+struct boot_dev_s {
+	uint32_t offset;
+	uint32_t size;
+	uint8_t *buffer;
+	uint32_t base_address;
+};
+
+#define O_RDONLY    (1 << 0)	/* Open for read access (only) */
+#define O_RDOK      O_RDONLY	/* Read access is permitted (non-standard) */
+#define O_WRONLY    (1 << 1)	/* Open for write access (only) */
+#define O_WROK      O_WRONLY	/* Write access is permitted (non-standard) */
+#define O_RDWR      (O_RDOK|O_WROK)	/* Open for both read & write access */
 
 #ifdef CONFIG_BUILD_KERNEL
 int main(int argc, FAR char *argv[])
@@ -46,20 +58,14 @@ int main(int argc, FAR char *argv[])
 int fota_sample(int argc, char *argv[])
 #endif
 {
+	//int i;
 	int ret = ERROR;
-	int bin_id;
-	int max_bins;
 	uint32_t part_id;
 	uint32_t next_part_id;
-	char user_input;
-	char buffer[] = "dummy";
 	fotahal_handle_t fotahal_handle;
-	fotahal_bin_header_t fotahal_header;
 
 	printf("***********************************************************\n");
 	printf(" fota update is in progress !!!\n");
-
-	/* Example call sequence to use fota hal */
 
 	/* open fota hal, get the handle to work with it */
 	if ((fotahal_handle = fotahal_open()) == NULL) {
@@ -73,87 +79,117 @@ int fota_sample(int argc, char *argv[])
 		printf("%s : fotahal_get_partition error\n", __func__);
 		goto part_error;
 	}
-
 	printf(" current running partition is  [ OTA%d ]\n", part_id);
 
-	/* Decide the next partiton we can use, may be first free partition */
-	for (next_part_id = FOTA_PARTITION_OTA0; (next_part_id < FOTA_PARTITION_MAX)
-		 && next_part_id == part_id; next_part_id++) ;
+	for (next_part_id = FOTA_PARTITION_OTA0;
+			(next_part_id < FOTA_PARTITION_MAX) && next_part_id == part_id;
+			next_part_id++)
+		;
 
 	if (next_part_id >= FOTA_PARTITION_MAX) {
 		printf("%s : No free partition left\n", __func__);
 		goto part_error;
 	}
+	/*
+	printf(" before set partition\n", next_part_id);
 
-	printf(" next fota update partition is [ OTA%d ]\n", next_part_id);
-
-	/* FIXME:
-	 * This is for fota sample test, Real application might need to handle
-	 * it differently.
-	 * We are not downloading binary from server.
-	 * Let's post a banner here to inform user to manually download the binary
-	 */
-
-	printf("*******  oh!! Fota Server is Down !!! ******\n");
-	printf(" please download fota binary manually using below step !!! \n");
-	printf("        [ make download TINYARA_OTA%d ]     \n", next_part_id);
-	printf("Is OTA%d binary manually downloaded? If yes press Y to continue [Y/N]\n", next_part_id);
-	user_input = getchar();
-	if (user_input != 'Y' && user_input != 'y') {
-		printf(" fota update cancled !!!\n");
-		printf("***********************************************************\n");
-		goto fota_exit;
-	}
-
-	if (fotahal_set_partition(fotahal_handle, next_part_id) != FOTAHAL_RETURN_SUCCESS) {
+	if (fotahal_set_partition(fotahal_handle, next_part_id)
+			!= FOTAHAL_RETURN_SUCCESS) {
 		printf("%s : fotahal_set_partition error\n", __func__);
 		goto part_error;
 	}
-
-	/* max_bins = 1; for testing */
-	max_bins = 1;
-	for (bin_id = 0; bin_id < max_bins; bin_id++) {
-		/* Extract fota header from binary */
-		/* But unfortunately, we have not received binary,
-		 * hence for testing, construct binary header locally
-		 */
-		fotahal_header.fotahal_bin_id = bin_id;
-
-		if (fotahal_set_binary(fotahal_handle, fotahal_header.fotahal_bin_id)
+	printf(" current running partition is  [ OTA%d ]\n", next_part_id);
+	*/
+	char buffer[] = "dummy";
+	ret = fotahal_write(fotahal_handle, buffer, sizeof(buffer));
+	if (ret != FOTAHAL_RETURN_SUCCESS) {
+		printf("%s : fotahal_write error. %d\n", __func__, ret);
+		goto write_error;
+	}
+	printf("[FOTA_WRITE] %s\n", buffer);
+	//*
+	char temp[] = "yummy";
+	if (fotahal_read(fotahal_handle, temp, sizeof(temp))
 			!= FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_set_binary error\n", __func__);
-			goto part_error;
-		}
-
-		if (fotahal_write(fotahal_handle, buffer, 0) != FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_write error\n", __func__);
-			goto write_error;
-		}
-
-		/* Lets update boot param, to trigger fota update in next cycle */
-		if (fotahal_update_bootparam(fotahal_handle) != FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_update_bootparam error\n", __func__);
-			goto param_error;
-		}
+		printf("%s : fotahal_read error\n", __func__);
+		goto write_error;
 	}
+	printf("[FOTA_READ] %s\n", temp);
+	//*/
+	/*
+	 int fota_fd;
+	 int ota_size;
+	 FAR struct boot_dev_s *dev;
+	 struct inode *inode;
+	 char path[20];
+	 static char fota_driver_path[20] = "/dev/fota";
+	 uint8_t *pBinData, *pBinData2;
+	 // open fota driver
+	 fota_fd = open(fota_driver_path, O_RDWR);
+	 if (fota_fd < 0) {
+	 dbg("%s: fota driver open failed\n", __func__);
+	 return -1;
+	 }
 
-	if (fotahal_close(fotahal_handle) != FOTAHAL_RETURN_SUCCESS) {
-		printf("%s : fotahal_close error\n", __func__);
-		goto close_error;
-	}
+	 snprintf(path, sizeof(path), "/dev/ota");
 
-	printf(" fota update successfully downloaded !!!\n");
-	printf(" Please reset your board to continue fota update !!!\n");
-	printf("***********************************************************\n");
-	ret = OK;
+	 ret = open_blockdriver(path, 0, &inode);
 
-close_error:
-param_error:
-write_error:
-fota_exit:
-part_error:
-	fotahal_close(fotahal_handle);
-open_error:
+	 if (ret < 0) {
+	 printf("Failed to open %s\n", path);
+	 }
+	 //printf("Open Sucess!! %s\n", path);
+
+	 dev = (FAR struct boot_dev_s *) inode->i_private;
+
+	 printf("Erase OTA Flash region \n");
+
+	 ota_size = 0x002E0000;
+
+	 // ota binary size / 4K
+	 for (i = 0; i < (ota_size / 0x1000); i++) {
+	 dev->offset = i;
+	 dev->size = 0x1000;
+	 inode->u.i_bops->ioctl(inode, 0, 0x20);
+	 printf(".");
+	 }
+	 printf("\n");
+
+	 pBinData = (uint8_t *) malloc(4096);
+	 pBinData2 = (uint8_t *) malloc(4096);
+
+	 for (i = 0; i < 4096; ++i) {
+	 pBinData[i] = i % 255;
+	 }
+
+	 dev->offset = 0;
+	 dev->size = 0x1000;
+	 dev->buffer = pBinData;
+	 inode->u.i_bops->ioctl(inode, 1, 0);
+
+	 dev->offset = 0;
+	 dev->size = 0x1000;
+	 dev->buffer = pBinData2;
+
+	 inode->u.i_bops->ioctl(inode, 2, 0);
+
+	 for (i = 0; i < 255; ++i) {
+	 printf("DATA_i = %d\n", pBinData[i]);
+	 printf("DATA2_i = %d\n", pBinData2[i]);
+	 }
+
+	 //data_download(inode);
+
+	 printf("OTA finish\n");
+
+	 (void) close_blockdriver(inode);
+
+	 free(pBinData);
+	 free(pBinData2);
+	 */
+	write_error: part_error: fotahal_close(fotahal_handle);
+	open_error:
+
 	return ret;
 }
 
@@ -163,7 +199,6 @@ open_error:
  * Description:
  *  Install fota_sample command to TASH
  ****************************************************************************/
-void fota_sample_app_install(void)
-{
+void fota_sample_app_install(void) {
 	tash_cmd_install("fota_update", fota_sample, TASH_EXECMD_ASYNC);
 }

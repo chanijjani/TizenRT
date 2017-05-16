@@ -100,7 +100,7 @@ ssize_t file_read(FAR struct file *filep, FAR void *buf, size_t nbytes)
 	inode = filep->f_inode;
 
 	/* Was this file opened for read access? */
-
+	//dbg("[fs_read.c] 1\n");
 	if ((filep->f_oflags & O_RDOK) == 0) {
 		/* No.. File is not read-able */
 
@@ -116,12 +116,12 @@ ssize_t file_read(FAR struct file *filep, FAR void *buf, size_t nbytes)
 		 * mountpoint, we depend on the read methods being identical in
 		 * signature and position in the operations vtable.
 		 */
-
 		ret = (int)inode->u.i_ops->read(filep, (char *)buf, (size_t)nbytes);
+		//dbg("[fs_read.c] 2 | filep: %d, nbytes: %d, ret: %d\n", filep, nbytes, ret);
 	}
 
 	/* If an error occurred, set errno and return -1 (ERROR) */
-
+	//dbg("[fs_read.c] 3\n");
 	if (ret < 0) {
 		set_errno(-ret);
 		return ERROR;

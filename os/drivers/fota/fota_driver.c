@@ -107,6 +107,8 @@ static ssize_t fota_read(FAR struct file *filep, FAR char *buffer, size_t buflen
 	FAR fota_dev_t *dev = inode->i_private;
 	int ret = ERROR;
 
+	dbg("[FOTA DRIVER] entered\n");
+
 	if (!g_fota_dev_opened) {
 		dbg(" device is not opened, ret = %d\n", ret);
 		set_errno(EBADF);
@@ -114,6 +116,7 @@ static ssize_t fota_read(FAR struct file *filep, FAR char *buffer, size_t buflen
 	}
 
 	ret = dev->fota_read(buffer, buflen);
+	dbg("[FOTA DRIVER] read done, ret = %d\n", ret);
 	return ret;
 }
 
@@ -222,7 +225,7 @@ static int fota_open(FAR struct file *filep)
  ************************************************************************************/
 int fota_register(FAR fota_dev_t *dev)
 {
-	const char *path = "/dev/fota";
+	const char *path = "/dev/mtdblock7";
 
 	sem_init(&g_fota_open_sem, 0, 1);
 
