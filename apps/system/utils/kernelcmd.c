@@ -64,6 +64,9 @@ const static tash_cmdlist_t kdbg_cmds[] = {
 void kernel_register_utilcmds(void)
 {
 	tash_cmdlist_install(kdbg_cmds);
+#if defined(CONFIG_EXAMPLES_FOTA_SAMPLE)
+	fota_sample_app_install();
+#endif
 }
 #endif
 

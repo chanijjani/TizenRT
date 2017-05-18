@@ -58,7 +58,8 @@ CFLAGS += -I$(TOPDIR)/sched
 ASRCS =
 CSRCS = artik053_boot.c \
 	artik053_tash.c \
-	artik053_pwm.c
+	artik053_pwm.c \
+	s5jt200_fota.c
 
 ifeq ($(CONFIG_MTD_PROGMEM),y)
 CSRCS += artik053_progmem.c

@@ -84,16 +84,27 @@ static ssize_t fota_write(FAR struct file *filep, FAR const char *buffer, size_t
 	FAR fota_dev_t *dev = inode->i_private;
 	int ret = ERROR;
 
+	//dbg("[fota_driver.c] fota_write() entered\n");
 	if (!g_fota_dev_opened) {
 		dbg(" device is not opened, ret = %d\n", ret);
 		set_errno(EBADF);
 		return ret;
 	}
 
+	/* Check buffer
+	int e = 0, f = 0;
+	for(e=0; e<3; e++) {
+		for(f=0; f<4; f++)
+			dbg("0x%04x  ", (unsigned int)*(buffer+e*4+f));
+		dbg("\n");
+	}
+	*/
+
 	ret = dev->fota_write(buffer, buflen);
 	if (ret == OK && !g_fota_dev_written) {
 		g_fota_dev_written = true;
 	}
+	//dbg("[fota_driver.c] write done, ret = %d\n", ret);
 
 	return ret;
 }
@@ -107,6 +118,7 @@ static ssize_t fota_read(FAR struct file *filep, FAR char *buffer, size_t buflen
 	FAR fota_dev_t *dev = inode->i_private;
 	int ret = ERROR;
 
+	//dbg("[fota_driver.c] fota_read() entered\n");
 	if (!g_fota_dev_opened) {
 		dbg(" device is not opened, ret = %d\n", ret);
 		set_errno(EBADF);
@@ -114,6 +126,8 @@ static ssize_t fota_read(FAR struct file *filep, FAR char *buffer, size_t buflen
 	}
 
 	ret = dev->fota_read(buffer, buflen);
+	//dbg("[fota_driver.c] read done, ret = %d\n", ret);
+
 	return ret;
 }
 
@@ -222,15 +236,19 @@ static int fota_open(FAR struct file *filep)
  ************************************************************************************/
 int fota_register(FAR fota_dev_t *dev)
 {
-	const char *path = "/dev/fota";
+	int ret = -1;
+
+	const char *path = "/dev/mtdblock8";
 
 	sem_init(&g_fota_open_sem, 0, 1);
-
-	dbg("Registering %s\n", path);
 
 	if (!dev) {
 		return ERROR;
 	}
 
-	return register_driver(path, &g_fotaops, 0666, dev);
+	ret = register_driver(path, &g_fotaops, 0666, dev);
+	dbg("Registering %s, ret = %d\n", path, ret);
+
+	return ret;
+	//return register_driver(path, &g_fotaops, 0666, dev);
 }

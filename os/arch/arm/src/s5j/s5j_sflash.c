@@ -68,6 +68,8 @@
 #include "s5j_gpio.h"
 #include "chip/s5jt200_sflash.h"
 
+FAR struct s5j_sflash_dev_s *sflashdev;
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -229,4 +231,152 @@ void s5j_sflash_init(void)
 
 	/* Set FLASH clk 80Mhz for Max performance */
 	cal_clk_setrate(d1_serialflash, 80000000);
+}
+
+/******************************************************************************
+ * Name: s5j_sflash_erase
+ *
+ * Description:
+ *   erase flash
+ *
+ *****************************************************************************/
+#define Outp32(addr, data)	(*(volatile u32 *)(addr) = (data))
+#define Outp8(addr, data)  (*(volatile u8 *)(addr) = (data))
+int s5j_sflash_erase(struct s5j_sflash_dev_s *dev, uint8_t cmd, uint32_t addr) {
+	//int ret;
+	//uint32_t val;
+	//int size = 0;
+
+#ifdef S5J_SFLASH_USE_DIRECT_RW
+	/* debug code */
+
+	if (dev == NULL) {
+		dev = sflashdev;
+	}
+#endif
+	/*
+	 do {
+	 ret = s5j_sflash_write_enable(dev);
+	 if (0 != ret) {
+	 usleep(100);
+	 }
+	 } while (0 != ret);
+	 */
+	switch (cmd) {
+	/*
+	 case SFLASH_CHIP_ERASE1:
+	 val = getreg32(rSF_CON) | (1 << 31) | (1 << 15);
+	 putreg32(val, rSF_CON);
+	 addr = 0;
+	 Outp8(rCE, 0x1);
+	 break;
+	 case SFLASH_CHIP_ERASE2:
+	 addr = 0;
+	 Outp8(rCE, 0x1);
+	 break;
+
+	 case SFLASH_SECTOR_ERASE:
+	 Outp32(rERASE_ADDRESS, addr);
+	 Outp8(rSE, 0x1);
+	 size = 4096;
+	 break;
+
+	 case SFLASH_BLOCK_ERASE_LARGE:
+	 size = 65536; // block size
+	 SetBits(rCOMMAND2, 16, 0xFF, 0xD8);
+	 // SetBits(rCOMMAND2, 16, 0xFF, COMMAND_ERASE_32KB);
+
+	 Outp32(rERASE_ADDRESS, addr);
+	 Outp8(rBE, 0x1);
+	 break;
+	*/
+
+	 break;
+
+	default:
+		break;
+	}
+
+	arch_invalidate_dcache(addr + 0x04000000, (addr + 0x04000000 + 4096));
+
+	return 0;
+}
+
+/******************************************************************************
+ * Name: s5j_sflash_write
+ *
+ * Description:
+ *  Write data.
+ *
+ *****************************************************************************/
+#define MIN(a,b) (a < b ? a : b)
+
+int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
+		uint32_t size) {
+	int32_t i;
+	int32_t readsize = size;
+	//uint32_t offset;
+
+	i = 0;
+
+	/* write is directly called from nshlib, so may allow it */
+
+#ifdef S5J_SFLASH_USE_DIRECT_RW
+	/* debug code */
+
+	if (dev == NULL)
+	{
+		dev = sflashdev;
+	}
+#endif
+	//dbg ("addr 0x%x, size %d\n", addr, size);
+	/*
+	signed int e = 0, f = 0;
+	for(e=0; e<3; e++) {
+		for (f = 0; f < 4; f++) {
+			unsigned char *address = 0;
+			address = (unsigned char *)(0x04000000 + e * 4 + f);
+			dbg("0x%04x  ", (unsigned int)*address);
+		}
+		dbg("\n");
+	}
+	*/
+	//while (size >= 0) {
+		/* first align */
+		//offset = addr % 4096;
+		//readsize = MIN(4096 - offset, size);
+
+		memcpy((void *) (addr + 0x04000000), (void *) (buf + i), readsize);
+		//arch_flush_dcache(addr + 0x04000000, (addr + 0x04000000 + readsize));
+		//addr += readsize;
+		//i += readsize;
+		//size -= readsize;
+	//}
+	/*
+	for(e=0; e<3; e++) {
+		for(f=0; f<4; f++) {
+			unsigned char *address = 0;
+			address = (unsigned char *) (0x04000000 + e * 4 + f);
+			dbg("0x%04x  ", (unsigned int) *address);
+		}
+		dbg("\n");
+	}
+	*/
+	return 0;
+}
+
+/******************************************************************************
+ * Name: s5j_sflash_read
+ *
+ * Description:
+ *   Read data from flash.
+ *
+ *****************************************************************************/
+
+int s5j_sflash_read(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
+		uint32_t size) {
+	dbg ("addr 0x%x, size %d\n", addr, size);
+	memcpy((void *) (buf), (void *) (addr + 0x04000000), size);
+
+	return OK;
 }

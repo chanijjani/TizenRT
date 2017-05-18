@@ -39,6 +39,18 @@
  * Description:
  *      fota sample application
  ****************************************************************************/
+struct boot_dev_s {
+	uint32_t offset;
+	uint32_t size;
+	uint8_t *buffer;
+	uint32_t base_address;
+};
+
+#define O_RDONLY    (1 << 0)	/* Open for read access (only) */
+#define O_RDOK      O_RDONLY	/* Read access is permitted (non-standard) */
+#define O_WRONLY    (1 << 1)	/* Open for write access (only) */
+#define O_WROK      O_WRONLY	/* Write access is permitted (non-standard) */
+#define O_RDWR      (O_RDOK|O_WROK)	/* Open for both read & write access */
 
 #ifdef CONFIG_BUILD_KERNEL
 int main(int argc, FAR char *argv[])
@@ -46,20 +58,14 @@ int main(int argc, FAR char *argv[])
 int fota_sample(int argc, char *argv[])
 #endif
 {
+	//int i;
 	int ret = ERROR;
-	int bin_id;
-	int max_bins;
 	uint32_t part_id;
 	uint32_t next_part_id;
-	char user_input;
-	char buffer[] = "dummy";
 	fotahal_handle_t fotahal_handle;
-	fotahal_bin_header_t fotahal_header;
 
 	printf("***********************************************************\n");
 	printf(" fota update is in progress !!!\n");
-
-	/* Example call sequence to use fota hal */
 
 	/* open fota hal, get the handle to work with it */
 	if ((fotahal_handle = fotahal_open()) == NULL) {
@@ -73,87 +79,51 @@ int fota_sample(int argc, char *argv[])
 		printf("%s : fotahal_get_partition error\n", __func__);
 		goto part_error;
 	}
-
 	printf(" current running partition is  [ OTA%d ]\n", part_id);
 
-	/* Decide the next partiton we can use, may be first free partition */
-	for (next_part_id = FOTA_PARTITION_OTA0; (next_part_id < FOTA_PARTITION_MAX)
-		 && next_part_id == part_id; next_part_id++) ;
+	for (next_part_id = FOTA_PARTITION_OTA0;
+			(next_part_id < FOTA_PARTITION_MAX) && next_part_id == part_id;
+			next_part_id++)
+		;
 
 	if (next_part_id >= FOTA_PARTITION_MAX) {
 		printf("%s : No free partition left\n", __func__);
 		goto part_error;
 	}
 
-	printf(" next fota update partition is [ OTA%d ]\n", next_part_id);
-
-	/* FIXME:
-	 * This is for fota sample test, Real application might need to handle
-	 * it differently.
-	 * We are not downloading binary from server.
-	 * Let's post a banner here to inform user to manually download the binary
-	 */
-
-	printf("*******  oh!! Fota Server is Down !!! ******\n");
-	printf(" please download fota binary manually using below step !!! \n");
-	printf("        [ make download TINYARA_OTA%d ]     \n", next_part_id);
-	printf("Is OTA%d binary manually downloaded? If yes press Y to continue [Y/N]\n", next_part_id);
-	user_input = getchar();
-	if (user_input != 'Y' && user_input != 'y') {
-		printf(" fota update cancled !!!\n");
-		printf("***********************************************************\n");
-		goto fota_exit;
+	char data[12] = { 0xDE, 0xAD, 0xBE, 0xEF,  // our data to write
+					   0xDE, 0xAD, 0xBE, 0xEF,
+					   0xDE, 0xAD, 0xBE, 0xEF};
+	ret = fotahal_write(fotahal_handle, data, sizeof(data));
+	if (ret != FOTAHAL_RETURN_SUCCESS) {
+		printf("%s : fotahal_write error. %d\n", __func__, ret);
+		goto write_error;
 	}
-
-	if (fotahal_set_partition(fotahal_handle, next_part_id) != FOTAHAL_RETURN_SUCCESS) {
-		printf("%s : fotahal_set_partition error\n", __func__);
-		goto part_error;
-	}
-
-	/* max_bins = 1; for testing */
-	max_bins = 1;
-	for (bin_id = 0; bin_id < max_bins; bin_id++) {
-		/* Extract fota header from binary */
-		/* But unfortunately, we have not received binary,
-		 * hence for testing, construct binary header locally
-		 */
-		fotahal_header.fotahal_bin_id = bin_id;
-
-		if (fotahal_set_binary(fotahal_handle, fotahal_header.fotahal_bin_id)
+	printf("[FOTA_WRITE]\n");
+	//*
+	char read_buf[12] = {0x00};
+	if (fotahal_read(fotahal_handle, read_buf, sizeof(read_buf))
 			!= FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_set_binary error\n", __func__);
-			goto part_error;
-		}
-
-		if (fotahal_write(fotahal_handle, buffer, 0) != FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_write error\n", __func__);
-			goto write_error;
-		}
-
-		/* Lets update boot param, to trigger fota update in next cycle */
-		if (fotahal_update_bootparam(fotahal_handle) != FOTAHAL_RETURN_SUCCESS) {
-			printf("%s : fotahal_update_bootparam error\n", __func__);
-			goto param_error;
-		}
+		printf("%s : fotahal_read error\n", __func__);
+		goto write_error;
 	}
+	printf("[FOTA_READ]\n");
+	int i = 0;
+	for (i = 0; i < 12; i++)
+		printf("buf[%d] = 0x%02x\n", i, (unsigned int) read_buf[i]);
 
-	if (fotahal_close(fotahal_handle) != FOTAHAL_RETURN_SUCCESS) {
-		printf("%s : fotahal_close error\n", __func__);
-		goto close_error;
-	}
+	write_error: part_error: fotahal_close(fotahal_handle);
+	open_error:
 
-	printf(" fota update successfully downloaded !!!\n");
-	printf(" Please reset your board to continue fota update !!!\n");
-	printf("***********************************************************\n");
-	ret = OK;
-
-close_error:
-param_error:
-write_error:
-fota_exit:
-part_error:
-	fotahal_close(fotahal_handle);
-open_error:
 	return ret;
 }
 
+/****************************************************************************
+ * Name: fota_sample_app_install
+ *
+ * Description:
+ *  Install fota_sample command to TASH
+ ****************************************************************************/
+void fota_sample_app_install(void) {
+	tash_cmd_install("fota_update", fota_sample, TASH_EXECMD_ASYNC);
+}

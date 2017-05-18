@@ -46,15 +46,14 @@ typedef struct priv_fotahal_handle_s priv_fotahal_handle_t;
 static uint32_t g_fota_fd;
 static bool g_partition_set = false;
 static bool g_binary_set = false;
-static char fota_driver_path[20] = "/dev/fota";
+static char fota_driver_path[20] = "/dev/mtdblock8";
 static priv_fotahal_handle_t g_priv_handle;
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-static int verify_fotahal_handle(fotahal_handle_t handle)
-{
-	priv_fotahal_handle_t *priv_handle = (priv_fotahal_handle_t *)handle;
+static int verify_fotahal_handle(fotahal_handle_t handle) {
+	priv_fotahal_handle_t *priv_handle = (priv_fotahal_handle_t *) handle;
 
 	if (priv_handle && priv_handle->priv) {
 		return OK;
@@ -72,24 +71,30 @@ static int verify_fotahal_handle(fotahal_handle_t handle)
  * Description:
  *   open fotahal layer
  ****************************************************************************/
-fotahal_handle_t fotahal_open(void)
-{
+fotahal_handle_t fotahal_open(void) {
 	int fota_fd;
 
-	/* open fota driver */
+	//* open fota driver
 	fota_fd = open(fota_driver_path, O_RDWR);
 	if (fota_fd < 0) {
 		dbg("%s: fota driver open failed\n", __func__);
 		return NULL;
 	}
-
+	//*/
+	/*
+	fota_fd = fs_initiate("/dev/fota", "fota_mtd");
+	if (fota_fd < 0) {
+		dbg("fs_initiate error\n");
+	}
+	//*/
 	g_fota_fd = fota_fd;
 	g_priv_handle.priv = &g_fota_fd;
 
 	g_partition_set = false;
 	g_binary_set = false;
 
-	return (fotahal_handle_t)&g_priv_handle;
+	dbg("[fota_hal.c] fotahal_open success, g_fota_fd = %d\n", g_fota_fd);
+	return (fotahal_handle_t) &g_priv_handle;
 }
 
 /****************************************************************************
@@ -98,8 +103,7 @@ fotahal_handle_t fotahal_open(void)
  * Description:
  *   Get current running partition id
  ****************************************************************************/
-fota_partition_id_t fotahal_get_partition(fotahal_handle_t handle)
-{
+fota_partition_id_t fotahal_get_partition(fotahal_handle_t handle) {
 	int ret;
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;
@@ -111,7 +115,7 @@ fota_partition_id_t fotahal_get_partition(fotahal_handle_t handle)
 		return ret;
 	}
 
-	return (fota_partition_id_t)ret;
+	return (fota_partition_id_t) ret;
 }
 
 /****************************************************************************
@@ -120,14 +124,14 @@ fota_partition_id_t fotahal_get_partition(fotahal_handle_t handle)
  * Description:
  *   Set a new partition for fota write
  ****************************************************************************/
-fotahal_return_t fotahal_set_partition(fotahal_handle_t handle, fota_partition_id_t part_id)
-{
+fotahal_return_t fotahal_set_partition(fotahal_handle_t handle,
+		fota_partition_id_t part_id) {
 	int ret;
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;
 	}
 
-	ret = ioctl(g_fota_fd, FOTA_SET_PART, (unsigned long)part_id);
+	ret = ioctl(g_fota_fd, FOTA_SET_PART, (unsigned long) part_id);
 	if (ret == -1) {
 		dbg("%s: fota driver ioctl failed\n", __func__);
 		return FOTAHAL_RETURN_PART_NOTSET;
@@ -143,14 +147,13 @@ fotahal_return_t fotahal_set_partition(fotahal_handle_t handle, fota_partition_i
  * Description:
  *   Set a binary type for fota write
  ****************************************************************************/
-fotahal_return_t fotahal_set_binary(fotahal_handle_t handle, uint32_t bin_id)
-{
+fotahal_return_t fotahal_set_binary(fotahal_handle_t handle, uint32_t bin_id) {
 	int ret;
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;
 	}
 
-	ret = ioctl(g_fota_fd, FOTA_SET_BIN, (unsigned long)bin_id);
+	ret = ioctl(g_fota_fd, FOTA_SET_BIN, (unsigned long) bin_id);
 	if (ret == -1) {
 		dbg("%s: fota driver ioctl failed\n", __func__);
 		return FOTAHAL_RETURN_BIN_NOTSET;
@@ -166,23 +169,24 @@ fotahal_return_t fotahal_set_binary(fotahal_handle_t handle, uint32_t bin_id)
  * Description:
  *   write binary chunck in buffer to fota partition
  ****************************************************************************/
-fotahal_return_t fotahal_write(fotahal_handle_t handle, const char *buffer, uint32_t bin_size)
-{
+fotahal_return_t fotahal_write(fotahal_handle_t handle, const char *buffer,
+		uint32_t bin_size) {
 	int ret;
 
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;
 	}
+	/*
+	 if (g_partition_set == false) {
+	 return FOTAHAL_RETURN_PART_NOTSET;
+	 }
 
-	if (g_partition_set == false) {
-		return FOTAHAL_RETURN_PART_NOTSET;
-	}
-
-	if (g_binary_set == false) {
-		return FOTAHAL_RETURN_BIN_NOTSET;
-	}
-
+	 if (g_binary_set == false) {
+	 return FOTAHAL_RETURN_BIN_NOTSET;
+	 }
+	 */
 	ret = write(g_fota_fd, buffer, bin_size);
+	dbg("[Write Done] fd: %d, target: %d, ret: %d\n", g_fota_fd, bin_size, ret);
 	if (ret != bin_size) {
 		dbg("%s: fota driver write failed\n", __func__);
 		return FOTAHAL_RETURN_WRITEFAIL;
@@ -190,15 +194,27 @@ fotahal_return_t fotahal_write(fotahal_handle_t handle, const char *buffer, uint
 
 	return FOTAHAL_RETURN_SUCCESS;
 }
+//*
+fotahal_return_t fotahal_read(fotahal_handle_t handle, char *buffer,
+		uint32_t bin_size) {
+	int ret;
+	ret = read(g_fota_fd, buffer, bin_size);
+	dbg("[Read Done] fd: %d, target: %d, ret: %d\n", g_fota_fd, bin_size, ret);
+	if (ret != bin_size) {
+		dbg("%s: fota driver read failed: %d\n", __func__, bin_size);
+		return FOTAHAL_RETURN_WRITEFAIL;
+	}
 
+	return FOTAHAL_RETURN_SUCCESS;
+}
+//*/
 /****************************************************************************
  * Name: fotahal_update_bootparam
  *
  * Description:
  *   Update boot param
  ****************************************************************************/
-fotahal_return_t fotahal_update_bootparam(fotahal_handle_t handle)
-{
+fotahal_return_t fotahal_update_bootparam(fotahal_handle_t handle) {
 	int ret;
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;
@@ -219,9 +235,8 @@ fotahal_return_t fotahal_update_bootparam(fotahal_handle_t handle)
  * Description:
  *   close fotahal
  ****************************************************************************/
-fotahal_return_t fotahal_close(fotahal_handle_t handle)
-{
-	priv_fotahal_handle_t *priv_handle = (priv_fotahal_handle_t *)handle;
+fotahal_return_t fotahal_close(fotahal_handle_t handle) {
+	priv_fotahal_handle_t *priv_handle = (priv_fotahal_handle_t *) handle;
 
 	if (verify_fotahal_handle(handle) != OK) {
 		return FOTAHAL_RETURN_WRONGHANDLE;

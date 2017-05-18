@@ -55,10 +55,17 @@
  * Included Files
  ****************************************************************************/
 
+//#ifdef CONFIG_MTD_PARTITION
+#include <tinyara/fs/mtd.h>
+#include <tinyara/fs/ioctl.h>
+//#endif
 #include <tinyara/config.h>
 
 #include <debug.h>
 #include <assert.h>
+#include <sys/types.h>
+
+#include <arch/board/partitions.h>
 
 #include <tinyara/gpio.h>
 
@@ -183,6 +190,127 @@ void s5j_board_initialize(void)
 #endif
 }
 
+/****************************************************************************
+ * Name: up_flashinitialize
+ *
+ * Description:
+ *   Create an initialized MTD device instance for internal flash.
+ *   Initialize MTD master & each of partitions here.
+ *   Each of partition classfied according to TAG number
+ *
+ ****************************************************************************/
+FAR struct mtd_dev_s *up_flashinitialize(void)
+{
+  FAR struct mtd_dev_s *mtd = NULL;
+  FAR struct spi_dev_s *spi;
+#ifdef CONFIG_MTD_PARTITION
+  int ret;
+  FAR struct mtd_geometry_s geo;
+#ifdef CONFIG_FS_ROMFS
+  FAR struct mtd_dev_s *mtd_romfs;
+#endif
+#ifdef CONFIG_NV_MANAGER
+  FAR struct mtd_dev_s *mtd_nvm;
+#endif
+  FAR struct mtd_dev_s *mtd_fs;
+  uint32_t nblocks;
+  uint32_t startblock;
+  uint32_t blocksize;
+#endif
+  dbg("[artik053_boot.c] up_flashinitialize\n");
+  spi = (FAR struct spi_dev_s *)up_spiflashinitialize();
+  if (!spi)
+  {
+	dbg("[artik053_boot.c] up_flashinitialize | spi == NULL\n");
+    return NULL;
+  }
+
+#ifdef CONFIG_MTD_M25P
+  mtd = (FAR struct mtd_dev_s *)m25p_initialize(spi);
+  if (!mtd)
+  {
+    return NULL;
+  }
+#endif
+
+#ifdef CONFIG_MTD_PARTITION
+
+  DEBUGASSERT(mtd);
+
+  /* Get the geometry of the FLASH device */
+
+  ret = mtd->ioctl(mtd, MTDIOC_GEOMETRY, (unsigned long)((uintptr_t)&geo));
+  if (ret < 0)
+  {
+    dbg("ERROR: mtd->ioctl failed: %d\n", ret);
+    return NULL;
+  }
+
+  blocksize = geo.blocksize;
+  dbg(" mtd ioctl called\n");
+
+#ifdef CONFIG_FS_ROMFS
+  /* ROMFS Partition */
+  startblock = MTD_BLK_ROMFS_START / blocksize;
+  nblocks = MTD_BLK_ROMFS_SIZE / blocksize;
+  mtd_romfs = mtd_partition(mtd, startblock, nblocks, MTD_ROMFS);
+  if (!mtd_romfs)
+  {
+    dbg("ERROR: mtd partition failed for romfs\n");
+    return NULL;
+  }
+#endif
+
+#ifdef CONFIG_NV_MANAGER
+  startblock = MTD_BLK_NV_START / blocksize;
+  nblocks = MTD_BLK_NV_SIZE / blocksize;
+  mtd_nvm = mtd_partition(mtd, startblock, nblocks, MTD_NV);
+  if (!mtd_nvm)
+  {
+    dbg("ERROR: mtd partition failed for nvm manager\n");
+    return NULL;
+  }
+#endif
+
+  /* FS Partition, SMARTFS will be mounted on it */
+  startblock = MTD_BLK_SMARTFS_START / blocksize;
+  nblocks = MTD_BLK_SMARTFS_SIZE / blocksize;
+  mtd_fs = mtd_partition(mtd, startblock, nblocks, MTD_FS);
+  if (!mtd_fs)
+  {
+    dbg("ERROR: mtd partition failed for smartfs\n");
+    return NULL;
+  }
+
+#ifdef CONFIG_MTD_REGISTRATION
+  /* register each of MTD here to get info through the procfs */
+  if (mtd)
+  {
+    mtd_register(mtd, "master");
+  }
+
+  if (mtd_fs)
+  {
+    mtd_register(mtd_fs, "FS");
+  }
+#ifdef CONFIG_NV_MANAGER
+  if (mtd_nvm)
+  {
+    mtd_register(mtd_nvm, "NVM");
+  }
+#endif
+#ifdef CONFIG_FS_ROMFS
+  if (mtd_romfs)
+  {
+    mtd_register(mtd_romfs, "ROMFS");
+  }
+#endif  /* CONFIG_FS_ROMFS */
+#endif  /* CONFIG_MTD_REGISTRATION */
+#endif  /* CONFIG_MTD_PARTITION */
+
+  return mtd;
+}
+
 #ifdef CONFIG_BOARD_INITIALIZE
 /****************************************************************************
  * Name: board_initialize
@@ -202,6 +330,21 @@ void board_initialize(void)
 
 	/* Perform app-specific initialization here instaed of from the TASH. */
 	board_app_initialize();
+
+
+#if defined(CONFIG_BOARD_FOTA_SUPPORT)
+  //g_sflash_nonsleep_mode = true;
+
+  // Update fota details in bootparam
+  s5jt200_fota_update_notify();
+
+  // Initialize fota
+  if (s5jt200_fota_init() != 0)
+    dbg(" fota init failed\n");
+
+  // we are done!!. switch of fota flag
+  //g_sflash_nonsleep_mode = false;
+#endif
 
 #ifdef CONFIG_SCSC_WLAN
 	slsi_driver_initialize();
