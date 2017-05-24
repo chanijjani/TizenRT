@@ -297,7 +297,7 @@ int s5j_sflash_erase(struct s5j_sflash_dev_s *dev, uint8_t cmd, uint32_t addr) {
 		break;
 	}
 
-	arch_invalidate_dcache(addr + 0x04000000, (addr + 0x04000000 + 4096));
+	arch_invalidate_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + 4096));
 
 	return 0;
 }
@@ -335,7 +335,7 @@ int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 	for(e=0; e<3; e++) {
 		for (f = 0; f < 4; f++) {
 			unsigned char *address = 0;
-			address = (unsigned char *)(0x04000000 + e * 4 + f);
+			address = (unsigned char *)(S5J_FLASH_PADDR + e * 4 + f);
 			dbg("0x%04x  ", (unsigned int)*address);
 		}
 		dbg("\n");
@@ -346,8 +346,8 @@ int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 		//offset = addr % 4096;
 		//readsize = MIN(4096 - offset, size);
 
-		memcpy((void *) (addr + 0x04000000), (void *) (buf + i), readsize);
-		//arch_flush_dcache(addr + 0x04000000, (addr + 0x04000000 + readsize));
+		memcpy((void *) (addr + S5J_FLASH_PADDR), (void *) (buf + i), readsize);
+		//arch_flush_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + readsize));
 		//addr += readsize;
 		//i += readsize;
 		//size -= readsize;
@@ -356,7 +356,7 @@ int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 	for(e=0; e<3; e++) {
 		for(f=0; f<4; f++) {
 			unsigned char *address = 0;
-			address = (unsigned char *) (0x04000000 + e * 4 + f);
+			address = (unsigned char *) (S5J_FLASH_PADDR + e * 4 + f);
 			dbg("0x%04x  ", (unsigned int) *address);
 		}
 		dbg("\n");
@@ -376,7 +376,7 @@ int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 int s5j_sflash_read(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 		uint32_t size) {
 	dbg ("addr 0x%x, size %d\n", addr, size);
-	memcpy((void *) (buf), (void *) (addr + 0x04000000), size);
+	memcpy((void *) (buf), (void *) (addr + S5J_FLASH_PADDR), size);
 
 	return OK;
 }
