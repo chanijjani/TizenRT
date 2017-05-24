@@ -278,7 +278,7 @@ int s5j_sflash_erase(struct s5j_sflash_dev_s *dev, uint8_t cmd, uint32_t addr) {
 	 case SFLASH_SECTOR_ERASE:
 	 Outp32(rERASE_ADDRESS, addr);
 	 Outp8(rSE, 0x1);
-	 size = 4096;
+	 size = CONFIG_ARTIK053_FLASH_PAGE_SIZE;
 	 break;
 
 	 case SFLASH_BLOCK_ERASE_LARGE:
@@ -297,7 +297,7 @@ int s5j_sflash_erase(struct s5j_sflash_dev_s *dev, uint8_t cmd, uint32_t addr) {
 		break;
 	}
 
-	arch_invalidate_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + 4096));
+	arch_invalidate_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + CONFIG_ARTIK053_FLASH_PAGE_SIZE));
 
 	return 0;
 }
@@ -313,46 +313,24 @@ int s5j_sflash_erase(struct s5j_sflash_dev_s *dev, uint8_t cmd, uint32_t addr) {
 
 int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 		uint32_t size) {
-	int32_t i;
-	int32_t readsize = size;
-	//uint32_t offset;
+	int32_t i = 0;
+	int32_t writesize = size;
 
-	i = 0;
+	if(writesize > CONFIG_ARTIK053_FLASH_PAGE_SIZE)
+			writesize = CONFIG_ARTIK053_FLASH_PAGE_SIZE;
 
-	/* write is directly called from nshlib, so may allow it */
+	while (size) {
+		memcpy((void *) (addr + S5J_FLASH_PADDR), (void *) (buf + i), writesize);
+		//arch_flush_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + writesize));
 
-#ifdef S5J_SFLASH_USE_DIRECT_RW
-	/* debug code */
+		addr += writesize;
+		i += writesize;
+		size -= writesize;
 
-	if (dev == NULL)
-	{
-		dev = sflashdev;
+		dbg ("addr 0x%x, size %d, writesize %d\n", addr, size, writesize);
 	}
-#endif
-	//dbg ("addr 0x%x, size %d\n", addr, size);
 	/*
 	signed int e = 0, f = 0;
-	for(e=0; e<3; e++) {
-		for (f = 0; f < 4; f++) {
-			unsigned char *address = 0;
-			address = (unsigned char *)(S5J_FLASH_PADDR + e * 4 + f);
-			dbg("0x%04x  ", (unsigned int)*address);
-		}
-		dbg("\n");
-	}
-	*/
-	//while (size >= 0) {
-		/* first align */
-		//offset = addr % 4096;
-		//readsize = MIN(4096 - offset, size);
-
-		memcpy((void *) (addr + S5J_FLASH_PADDR), (void *) (buf + i), readsize);
-		//arch_flush_dcache(addr + S5J_FLASH_PADDR, (addr + S5J_FLASH_PADDR + readsize));
-		//addr += readsize;
-		//i += readsize;
-		//size -= readsize;
-	//}
-	/*
 	for(e=0; e<3; e++) {
 		for(f=0; f<4; f++) {
 			unsigned char *address = 0;
@@ -361,7 +339,7 @@ int s5j_sflash_write(struct s5j_sflash_dev_s *dev, uint32_t addr, uint8_t *buf,
 		}
 		dbg("\n");
 	}
-	*/
+	//*/
 	return 0;
 }
 

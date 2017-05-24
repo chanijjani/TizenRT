@@ -157,7 +157,7 @@ static int s5jt200_fota_read(FAR const char *buffer, size_t buflen) {
 }
 
 static int s5jt200_fota_write(FAR const char *buffer, size_t buflen) {
-	uint32_t sector_len = SFLASH_ERASE_SECTOR_SIZE;
+	//uint32_t sector_len = SFLASH_ERASE_SECTOR_SIZE;
 	uint32_t fota_part_write_offset = 0;
 	//dbg("[s5jt200_fota.c] write entered\n");
 	/* validate the buffer */
@@ -165,28 +165,18 @@ static int s5jt200_fota_write(FAR const char *buffer, size_t buflen) {
 		set_errno(EINVAL);
 		return ERROR;
 	}
-	/* Check buffer
-	int e = 0, f = 0;
-	for(e=0; e<5; e++) {
-		for(f=0; f<4; f++)
-			dbg("0x%04x  ", (unsigned int)*(buffer+e*4+f));
-		dbg("\n");
-	}
-	*/
-	//dbg("[s5jt200_fota.c] start write, size=%d\n", buflen);
 
 	s5j_sflash_erase(NULL, SFLASH_ERASE_SECTOR_CMD, fota_part_write_offset);
 
 	/* Check buffer contents
-	int e = 0, f = 0;
-	for(e=0; e<3; e++) {
-		for(f=0; f<4; f++)
-			dbg("0x%04x  ", (unsigned int)*(buffer+e*4+f));
-		dbg("\n");
-	}
-	*/
-	s5j_sflash_write(NULL, fota_part_write_offset, buffer,
-				sector_len);
+	 int e = 0, f = 0;
+	 for(e=0; e<3; e++) {
+	 for(f=0; f<4; f++)
+	 dbg("0x%04x  ", (unsigned int)*(buffer+e*4+f));
+	 dbg("\n");
+	 }
+	 */
+	s5j_sflash_write(NULL, fota_part_write_offset, buffer, buflen);
 
 	//dbg(
 	//		"[s5jt200_fota.c] fota_part_write_offset = %d\n",
