@@ -593,6 +593,12 @@ const static tash_cmdlist_t net_utilcmds[] = {
 	{NULL, NULL, 0}
 };
 
+#ifdef CONFIG_TASH
+#ifdef CONFIG_EXAMPLES_SLSIWIFI
+int slsi_wifi_main(int argc, char *argv[]);
+#endif
+#endif
+
 const static tash_cmdlist_t net_appcmds[] = {
 #ifdef CONFIG_EXAMPLES_IOTIVITY
 	{"iotivity", iotivity_main, TASH_EXECMD_ASYNC},
@@ -603,6 +609,10 @@ const static tash_cmdlist_t net_appcmds[] = {
 	{"iotivity_sec", iotivity_sec_main, TASH_EXECMD_ASYNC},
 #endif
 #endif							/* CONFIG_EXAMPLES_IOTIVITY */
+#ifdef CONFIG_EXAMPLES_SLSIWIFI
+	{"artikwifi", slsi_wifi_main, TASH_EXECMD_SYNC },
+#endif
+
 #ifdef CONFIG_SYSTEM_NETDB
 	{"netdb", netdb_main, TASH_EXECMD_SYNC},
 #endif
