@@ -16,7 +16,7 @@
  # 
  ########################################################################### 
 CSRCS += tinyalsa.c 
- 
+CSRCS += audio_manager.c 
 
 DEPPATH += --dep-path src/tinyalsa 
 VPATH += :src/tinyalsa 

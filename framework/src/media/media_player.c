@@ -69,10 +69,19 @@ play_result_t media_play(int fd, media_format_t format)
 	config.period_count = CONFIG_AUDIO_NUM_BUFFERS;
 	config.format = PCM_FORMAT_S16_LE;
 
+#ifndef CONFIG_EXAMPLES_AUDIO_MANAGER_TEST
+	int audio_card_id = get_avail_audio_card_id();
+	int audio_device_id = get_avail_audio_device();
+	g_pc.pcmout = pcm_open(audio_card_id, audio_device_id, PCM_OUT, &config);
+	if (!g_pc.pcmout) {
+		return PLAY_ERROR_DRIVER;
+	}
+#else
 	g_pc.pcmout = pcm_open(0, 0, PCM_OUT, &config);
 	if (!g_pc.pcmout) {
 		return PLAY_ERROR_DRIVER;
 	}
+#endif
 
 	g_pc.buffer_size = pcm_frames_to_bytes(g_pc.pcmout, pcm_get_buffer_size(g_pc.pcmout));
 	g_pc.download_size = 0;
@@ -282,6 +291,7 @@ int player_worker(void *args)
 		PLAY_LOCK();
 		switch (g_pc.state) {
 		case PLAY_RUNNING:
+			printf("Record is played!!\n");
 			ret = read_data_pcm_write(buffer);
 			if (ret == 0) {
 				g_pc.state = PLAY_DRAINING;
