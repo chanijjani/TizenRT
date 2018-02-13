@@ -210,6 +210,7 @@ static int alc5658_release(FAR struct audio_lowerhalf_s *dev, FAR void *session)
 #else
 static int alc5658_release(FAR struct audio_lowerhalf_s *dev);
 #endif
+static int alc5658_setvolume_wrapper(FAR struct audio_lowerhalf_s *dev);//, uint16_t volume);
 
 /* Interrupt handling an worker thread */
 

@@ -630,6 +630,47 @@ static int audio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 	}
 	break;
 
+	/* AUDIOIOC_GETCAPS - Get the audio device capabilities.
+	 *
+	 *   ioctl argument:  A pointer to the audio_caps_s structure.
+	 */
+	case AUDIOIOC_SETVOLUME_WRAPPER: {
+//
+//		switch (caps->ac_type) {
+//		case AUDIO_TYPE_FEATURE:
+//			/* Inner swich case: Process based on Feature Unit */
+//			switch (caps->ac_format.hw) {
+//			case AUDIO_FU_VOLUME: {
+//				/* Set the volume */
+//
+//				uint16_t volume = caps->ac_controls.hw[0];
+//				audvdbg("    Volume: %d\n", volume);
+//			}
+//		}
+//
+		FAR const struct audio_caps_desc_s *caps = (FAR const struct audio_caps_desc_s *)((uintptr_t) arg);
+		if(lower->ops->configure != NULL) {
+			printf("[audio.c] audio_ioctl()!!\n");
+			ret = lower->ops->configure(lower, &caps->caps);
+			printf("[audio.c] ret = %d\n", ret);
+		}
+		else {
+			printf("[audio.c] configure = NULL!!\n");
+		}
+
+		/* Call the lower-half driver capabilities handler */
+//		unsigned int volume = (unsigned int)((uintptr_t) arg);
+//		printf("[audio.c] audio_ioctl() : arg=%d, volume=%d\n", arg, volume);
+//		if(lower->ops->setvolume_wrapper != NULL) {
+//			printf("[audio.c] audio_ioctl()!!\n");
+//			ret = lower->ops->setvolume_wrapper(lower, volume);
+//		}
+//		else {
+//			printf("[audio.c] setvolume_wrapper = NULL!!\n");
+//		}
+	}
+	break;
+
 	/* Any unrecognized IOCTL commands might be platform-specific ioctl commands */
 
 	default: {

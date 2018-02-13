@@ -39,29 +39,40 @@
 extern "C" {
 #endif
 
+#define MAX_IN_AUDIO_DEV_NUM 2
+#define MAX_OUT_AUDIO_DEV_NUM 2
+
 /**
  * @brief Result types of Audio Manager APIs such as FAIL, SUCCESS, or INVALID ARGS
  */
 typedef enum {
 	AUDIO_MANAGER_FAIL = -1,
 	AUDIO_MANAGER_SUCCESS,
-	AUDIO_MANAGER_INVALID_ARGS,
-	AUDIO_MANAGER_INITIALIZED,
-	AUDIO_MANAGER_BUSY,
+	AUDIO_MANAGER_INVALID_PARAMS,
 } audio_manager_result_e;
 
+typedef enum {
+	AUDIO_DEVICE_UNIDENTIFIED = -1,
+	AUDIO_DEVICE_IDENTIFIED,
+	AUDIO_DEVICE_RESERVED
+} audio_device_status_e;
+
 typedef struct {
-	int audio_dev_id;
+	unsigned int volume;
+} audio_config_s;
+
+typedef struct {
+//	int audio_dev_id;
 	char *dev_name;
+	audio_device_status_e status;
+	audio_config_s config;
 //	audio_dev_type_e direction;
 } audio_dev_info_s;
-
-//const struct audio_dev_info_s input_audio_devices[MAX_IN_AUDIO_DEV_NUM];
-//const struct audio_dev_info_s output_audio_devices[MAX_OUT_AUDIO_DEV_NUM];
 
 audio_manager_result_e audio_manager_init(void);
 int get_avail_audio_card_id(void);
 int get_avail_audio_device_id(void);
+int set_audio_volume(unsigned int volume);
 
 #if defined(__cplusplus)
 }								/* extern "C" */
