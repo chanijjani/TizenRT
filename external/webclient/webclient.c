@@ -104,10 +104,21 @@
 #  undef CONFIG_CODECS_BASE64
 #endif
 
-#define CONFIG_WEBCLIENT_MAXHTTPLINE 200
-#define CONFIG_WEBCLIENT_MAXMIMESIZE 32
-#define CONFIG_WEBCLIENT_MAXHOSTNAME 40
-#define CONFIG_WEBCLIENT_MAXFILENAME 100
+#ifndef CONFIG_WEBCLIENT_MAXHTTPLINE
+#define CONFIG_WEBCLIENT_MAXHTTPLINE 512
+#endif
+
+#ifndef CONFIG_WEBCLIENT_MAXMIMESIZE
+#define CONFIG_WEBCLIENT_MAXMIMESIZE 128
+#endif
+
+#ifndef CONFIG_WEBCLIENT_MAXHOSTNAME
+#define CONFIG_WEBCLIENT_MAXHOSTNAME 128
+#endif
+
+#ifndef CONFIG_WEBCLIENT_MAXFILENAME
+#define CONFIG_WEBCLIENT_MAXFILENAME 384
+#endif
 
 #ifndef CONFIG_WGET_USERAGENT
 # define CONFIG_WGET_USERAGENT "TinyARA"
@@ -919,7 +930,6 @@ static pthread_addr_t wget_base(void *arg)
 	int sockfd = -1;
 	int ret;
 	int buf_len, sndlen, len;
-	int remain = WEBCLIENT_CONF_MAX_MESSAGE_SIZE;
 	int encoding = CONTENT_LENGTH;
 	int state = HTTP_REQUEST_HEADER;
 	struct http_message_len_t mlen = {0,};
@@ -1021,20 +1031,17 @@ retry:
 		}
 	}
 
-	buf_len = 0;
+	int loopcount = 0;
 	while (!read_finish) {
-		if (remain <= 0) {
-			ndbg("Error: Response Size is too large\n");
-			goto errout;
-		}
-
+		ndbg("Receive start\n");
+		memset(param->response->message, 0, WEBCLIENT_CONF_MAX_MESSAGE_SIZE);
 		if (param->tls) {
 			len = mbedtls_ssl_read(&(client_tls->tls_ssl),
-								   (unsigned char *)param->response->message + buf_len,
-								   WEBCLIENT_CONF_MAX_MESSAGE_SIZE - buf_len);
+								   (unsigned char *)param->response->message,
+								   WEBCLIENT_CONF_MAX_MESSAGE_SIZE);
 		} else {
-			len = recv(sockfd, param->response->message + buf_len,
-					   WEBCLIENT_CONF_MAX_MESSAGE_SIZE - buf_len, 0);
+			len = recv(sockfd, param->response->message,
+					   WEBCLIENT_CONF_MAX_MESSAGE_SIZE, 0);
 		}
 
 		if (len < 0) {
@@ -1045,8 +1052,6 @@ retry:
 			goto errout;
 		}
 
-		buf_len += len;
-		remain -= len;
 		usleep(1);
 		read_finish = http_parse_message(param->response->message,
 						 len, NULL, param->response->url,
@@ -1055,22 +1060,25 @@ retry:
 						 param->response->headers,
 						 NULL, param->response, NULL);
 
+		++loopcount;
+		nvdbg("====== loopcount : %d read_finish : %d=====\n", loopcount, read_finish);
 		if (read_finish == HTTP_ERROR) {
 			ndbg("Error: Parse message Fail\n");
 			goto errout;
 		}
-	}
 
-	param->response->method = param->method;
-	param->response->url = param->url;
-	if (param->response->entity) {
-		param->response->entity_len = strlen(param->response->entity);
+		param->response->method = param->method;
+		param->response->url = param->url;
+
+		if (param->callback && param->response->entity_len != 0) {
+			param->callback(param->response);
+		}
 	}
 
 	if (param->callback) {
-		param->callback(param->response);
 		http_client_response_release(param->response);
 	}
+	
 	if (param->tls) {
 		wget_tls_release(client_tls);
 		wget_tls_ssl_release(client_tls);
@@ -1112,7 +1120,6 @@ static pthread_addr_t wget_base(void *arg)
 	int sockfd = -1;
 	int ret;
 	int buf_len, sndlen, len;
-	int remain = WEBCLIENT_CONF_MAX_MESSAGE_SIZE;
 	int encoding = CONTENT_LENGTH;
 	int state = HTTP_REQUEST_HEADER;
 	struct http_message_len_t mlen = {0,};
@@ -1150,6 +1157,8 @@ static pthread_addr_t wget_base(void *arg)
 		goto errout_before_init;
 	}
 
+	nvdbg("Length Info: sndlen : %d buf_len : %d param->buglen : %d\n", strlen(ws.buffer), strlen(param->buffer), param->buflen);
+	nvdbg("Send Data: %s\n", param->buffer);
 	if ((sockfd = wget_socket_connect(&ws)) < 0) {
 		ndbg("ERROR: socket failed: %d\n", errno);
 		goto errout_before_init;
@@ -1157,6 +1166,7 @@ static pthread_addr_t wget_base(void *arg)
 
 	buf_len = 0;
 	while (sndlen > 0) {
+		nvdbg("INFO: sndlen : %d buf_len : %d\n", sndlen, buf_len);
 		ret = send(sockfd, param->buffer + buf_len, sndlen, 0);
 		if (ret < 1) {
 			ndbg("ERROR: send failed: %d\n", ret);
@@ -1164,7 +1174,7 @@ static pthread_addr_t wget_base(void *arg)
 		} else {
 			sndlen -= ret;
 			buf_len += ret;
-			ndbg("SEND SUCCESS: send %d bytes\n", ret);
+			nvdbg("SEND SUCCESS: send %d bytes\n", ret);
 		}
 	}
 
@@ -1177,14 +1187,12 @@ static pthread_addr_t wget_base(void *arg)
 		}
 	}
 
-	buf_len = 0;
+	int loopcount = 0;
 	while (!read_finish) {
-		if (remain <= 0) {
-			ndbg("Error: Response Size is too large\n");
-			goto errout;
-		}
-		len = recv(sockfd, param->response->message + buf_len,
-				   WEBCLIENT_CONF_MAX_MESSAGE_SIZE - buf_len, 0);
+		ndbg("Receive start\n");
+		memset(param->response->message, 0, WEBCLIENT_CONF_MAX_MESSAGE_SIZE);
+		len = recv(sockfd, param->response->message,
+				   WEBCLIENT_CONF_MAX_MESSAGE_SIZE, 0);
 
 		if (len < 0) {
 			ndbg("Error: Receive Fail\n");
@@ -1194,8 +1202,6 @@ static pthread_addr_t wget_base(void *arg)
 			goto errout;
 		}
 
-		buf_len += len;
-		remain -= len;
 		usleep(1);
 		read_finish = http_parse_message(param->response->message,
 						 len, NULL, param->response->url,
@@ -1204,20 +1210,22 @@ static pthread_addr_t wget_base(void *arg)
 						 param->response->headers,
 						 NULL, param->response, NULL);
 
+		++loopcount;
+		nvdbg("====== loopcount : %d read_finish : %d=====\n", loopcount, read_finish);
 		if (read_finish == HTTP_ERROR) {
-			ndbg("Error: Parse message Fail\n");
+			ndbg("Error: Parse message Fail %d \n", read_finish);
 			goto errout;
+		}
+
+		param->response->method = param->method;
+		param->response->url = param->url;
+
+		if (param->callback && param->response->entity_len != 0) {
+			param->callback(param->response);
 		}
 	}
 
-	param->response->method = param->method;
-	param->response->url = param->url;
-	if (param->response->entity) {
-		param->response->entity_len = strlen(param->response->entity);
-	}
-
 	if (param->callback) {
-		param->callback(param->response);
 		http_client_response_release(param->response);
 	}
 

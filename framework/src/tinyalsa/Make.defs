@@ -15,9 +15,11 @@
  # language governing permissions and limitations under the License. 
  # 
  ########################################################################### 
+
+ifeq ($(CONFIG_AUDIO), y)
 CSRCS += tinyalsa.c 
 CSRCS += audio_manager.c 
 
 DEPPATH += --dep-path src/tinyalsa 
 VPATH += :src/tinyalsa 
-
+endif
