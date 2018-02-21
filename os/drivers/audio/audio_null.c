@@ -139,7 +139,6 @@ static int null_release(FAR struct audio_lowerhalf_s *dev, FAR void *session);
 #else
 static int null_release(FAR struct audio_lowerhalf_s *dev);
 #endif
-static int null_setvolume_wrapper(FAR struct audio_lowerhalf_s *dev, uint16_t volume);
 
 /****************************************************************************
  * Private Data
@@ -166,7 +165,6 @@ static const struct audio_ops_s g_audioops = {
 	NULL,						/* write          */
 	null_reserve,				/* reserve        */
 	null_release,				/* release        */
-	null_setvolume_wrapper		/* set_volume     */
 };
 
 /****************************************************************************
@@ -769,13 +767,6 @@ static int null_release(FAR struct audio_lowerhalf_s *dev)
 		priv->threadid = 0;
 	}
 
-	return OK;
-}
-
-static int null_setvolume_wrapper(FAR struct audio_lowerhalf_s *dev, uint16_t volume)
-{
-	FAR struct null_dev_s *priv = (FAR struct null_dev_s *)dev;
-	audinfo("Return OK\n");
 	return OK;
 }
 

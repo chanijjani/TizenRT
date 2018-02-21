@@ -71,7 +71,7 @@ audio_manager_result_e audio_manager_init(void)
 	dir_entry = readdir(dir_info);
 	while (dir_entry) {
 		printf("%s\n", dir_entry->d_name);
-
+		// TODO: Add cases for various drivers. Currently, identify 'pcm' drivers only.
 		if ((dir_entry->d_name[0] != 'p')
 			|| (dir_entry->d_name[1] != 'c')
 			|| (dir_entry->d_name[2] != 'm') || (sscanf(&dir_entry->d_name[3], "C%uD%u%c", &card_id, &device_id, &type) != 3)) {
@@ -93,18 +93,14 @@ audio_manager_result_e audio_manager_init(void)
 
 		dir_entry = readdir(dir_info);
 	}
-
 	closedir(dir_info);
 
-
-	printf("Before file open\n");
+	// Pre-open fd to handle volume changes..
 	out_dev_fd = open("/dev/audio/pcmC0D0c", O_WRONLY);
-
 	if (out_dev_fd < 0) {
-		printf("[audio_manager.c] file open failed in set_audio_volue(), fd = %d\n", out_dev_fd);
+		printf("[audio_manager.c] file open failed in audio_manager_init(), fd = %d\n", out_dev_fd);
 		return -1;
 	}
-
 
 	return AUDIO_MANAGER_SUCCESS;
 }
@@ -123,27 +119,13 @@ int get_avail_audio_device_id(void)
 
 int set_audio_volume(unsigned int volume)
 {
-//	int fd = -1;
-//	int ret = 0;
-//	printf("Before file open\n");
-//	fd = open("/dev/audio/pcmC0D0c", O_WRONLY);
-//
-//	if (fd < 0) {
-//		printf("[audio_manager.c] file open failed in set_audio_volue(), fd = %d\n", fd);
-//		return -1;
-//	}
-
-	/* Try to reserve the device */
-	printf("Before IOCTL: AUDIOIOC_SETVOLUME, fd = %d\n", out_dev_fd);
-
 	struct audio_caps_desc_s cap_desc;
-
 	cap_desc.caps.ac_len = sizeof(struct audio_caps_s);
 	cap_desc.caps.ac_type = AUDIO_TYPE_FEATURE;
 	cap_desc.caps.ac_format.hw = AUDIO_FU_VOLUME;
 	cap_desc.caps.ac_controls.hw[0] = volume;
 
-	int ret = ioctl(out_dev_fd, AUDIOIOC_SETVOLUME_WRAPPER, (unsigned long)&cap_desc);
+	int ret = ioctl(out_dev_fd, AUDIOIOC_SETVOLUME, (unsigned long)&cap_desc);
 	if (ret < 0) {
 		printf("AUDIOIOC_SETVOLUME ioctl failed, ret = %d\n", ret);
 	}

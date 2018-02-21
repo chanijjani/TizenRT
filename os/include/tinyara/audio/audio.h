@@ -140,7 +140,7 @@
 #define AUDIOIOC_HWRESET            _AUDIOIOC(16)
 #define AUDIOIOC_DEQUEUEBUFFER      _AUDIOIOC(17)
 #define AUDIOIOC_PREPARE            _AUDIOIOC(18)
-#define AUDIOIOC_SETVOLUME_WRAPPER 	_AUDIOIOC(19)
+#define AUDIOIOC_SETVOLUME		 	_AUDIOIOC(19)
 
 /* Audio Device Types *******************************************************/
 /* The NuttX audio interface support different types of audio devices for
@@ -614,7 +614,7 @@ struct audio_ops_s {
 
 	/* Adjust the device(*dev) volume. */
 
-	CODE int (*setvolume_wrapper)(FAR struct audio_lowerhalf_s *dev, unsigned int volume);
+	CODE int (*setvolume)(FAR struct audio_lowerhalf_s *dev, unsigned int volume);
 };
 
 /* This structure is the generic form of state structure used by lower half
