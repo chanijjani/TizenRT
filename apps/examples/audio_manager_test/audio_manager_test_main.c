@@ -28,20 +28,7 @@
 #include <media/media_utils.h>
 #include <tinyalsa/audio_manager.h>
 
-#include <sys/socket.h>
-
-#define AUDIO_TEST_FILE "/mnt/pcm"
-#define AUDIO_DEFAULT_RATE 16000
-#define AUDIO_RECORD_DURATION 3	//3sec
-
-record_result_t audio_record_pcm(int fd);
-void clean_all_data(int fd);
-
-static void audio_pcm_readi_p(void);
-void audio_pcm_writei_p(void);
-
-//struct pcm *g_pcm;
-//char *buffer;
+void audio_play(audio_volume_e volume);
 
 /****************************************************************************
  * audio_manager_test_main
@@ -52,8 +39,6 @@ int main(int argc, FAR char *argv[])
 int audio_manager_test_main(int argc, char **argv)
 #endif
 {
-//	int fd = -1;
-
 	if (audio_manager_init() != AUDIO_MANAGER_SUCCESS) {
 		printf("Error: audio_manager_init()\n");
 		return 0;
@@ -61,43 +46,64 @@ int audio_manager_test_main(int argc, char **argv)
 		printf("Audio Manager Init Okay..\n");
 	}
 
-	audio_pcm_writei_p();
+	audio_play(AUDIO_VOLUME_LOW);
+
+	audio_play(AUDIO_VOLUME_MEDIUM);
+
+	audio_play(AUDIO_VOLUME_HIGH);
 
 	return 0;
 }
 
-
-void audio_pcm_writei_p(void)
+void audio_play(audio_volume_e volume)
 {
-	int fd;
-	int ret;
-
 	char *buffer;
+	int fd;
 	int num_read;
-	int total_frames;
+	int total_frames = 0;
 	unsigned int size;
+#ifdef CONFIG_ARCH_BOARD_ARTIK053
+	const char file_path[] = "/mnt/pcm";
+#elif CONFIG_ARCH_BOARD_ARTIK055S
+	const char file_path[] = "/mnt/record2";
+#endif
 
 	/* use default config here */
 	struct pcm *g_pcm = pcm_open(0, 0, PCM_OUT, NULL);
+	if (!g_pcm) {
+		printf("[audio_manager_init()] pcm_open() is failed\n");
+		return;
+	}
 
-	set_audio_volume(100);
+	set_audio_volume(volume);
 
 	size = pcm_frames_to_bytes(g_pcm, pcm_get_buffer_size(g_pcm));
+	if (size <= 0) {
+		printf("[audio_manager_init()] Invalid frame size: %d\n", size);
+		return;
+	}
 	buffer = malloc(size);
 
-	fd = open("/mnt/record2", O_RDONLY);
+	fd = open(file_path, O_RDONLY);
+	if (fd < 0) {
+		printf("[audio_manager_init()] open() is failed: %s\n", file_path);
+		return;
+	}
 
-	printf("Playback start!!\n");
-
-	total_frames = 0;
+	printf("Start Playing!!\n");
 	do {
 		num_read = read(fd, buffer, size);
 		if (num_read > 0) {
 			total_frames += num_read;
-			ret = pcm_writei(g_pcm, buffer, pcm_bytes_to_frames(g_pcm, num_read));
+			pcm_writei(g_pcm, buffer, pcm_bytes_to_frames(g_pcm, num_read));
 		}
 	} while (num_read > 0);
+	printf("Finish Playing!!\n");
 
+	if (g_pcm) {
+		pcm_close(g_pcm);
+		g_pcm = NULL;
+	}
 	if (buffer != NULL) {
 		free(buffer);
 		buffer = NULL;
@@ -105,6 +111,4 @@ void audio_pcm_writei_p(void)
 	if (fd > 0) {
 		close(fd);
 	}
-
-	printf("Playback done!!\n");
 }

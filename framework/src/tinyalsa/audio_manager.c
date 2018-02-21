@@ -54,13 +54,13 @@ audio_manager_result_e audio_manager_init(void)
 	unsigned int card_id, device_id;
 	char type;
 	struct dirent *dir_entry;
-	DIR	*dir_info;
+	DIR *dir_info;
 	int i;
 
-	for (i=0; i<MAX_IN_AUDIO_DEV_NUM; i++) {
+	for (i = 0; i < MAX_IN_AUDIO_DEV_NUM; i++) {
 		input_audio_devices[i].status = AUDIO_DEVICE_UNIDENTIFIED;
 	}
-	for (i=0; i<MAX_OUT_AUDIO_DEV_NUM; i++) {
+	for (i = 0; i < MAX_OUT_AUDIO_DEV_NUM; i++) {
 		output_audio_devices[i].status = AUDIO_DEVICE_UNIDENTIFIED;
 	}
 
@@ -81,13 +81,9 @@ audio_manager_result_e audio_manager_init(void)
 
 		if (type == 'c' && device_id < MAX_IN_AUDIO_DEV_NUM && input_audio_devices[device_id].status == AUDIO_DEVICE_UNIDENTIFIED) {
 			input_audio_devices[device_id].status = AUDIO_DEVICE_IDENTIFIED;
-
-		}
-		else if (type == 'p' && device_id < MAX_OUT_AUDIO_DEV_NUM && output_audio_devices[device_id].status == AUDIO_DEVICE_UNIDENTIFIED) {
+		} else if (type == 'p' && device_id < MAX_OUT_AUDIO_DEV_NUM && output_audio_devices[device_id].status == AUDIO_DEVICE_UNIDENTIFIED) {
 			output_audio_devices[device_id].status = AUDIO_DEVICE_IDENTIFIED;
-
-		}
-		else {
+		} else {
 			return AUDIO_MANAGER_INVALID_PARAMS;
 		}
 
@@ -117,17 +113,24 @@ int get_avail_audio_device_id(void)
 	return 0;
 }
 
-int set_audio_volume(unsigned int volume)
+audio_manager_result_e set_audio_volume(audio_volume_e volume)
 {
 	struct audio_caps_desc_s cap_desc;
+	audio_manager_result_e ret = AUDIO_MANAGER_SUCCESS;
+
+	if (!(volume == AUDIO_VOLUME_LOW || volume == AUDIO_VOLUME_MEDIUM || volume == AUDIO_VOLUME_HIGH)) {
+		return AUDIO_MANAGER_INVALID_PARAMS;
+	}
+
 	cap_desc.caps.ac_len = sizeof(struct audio_caps_s);
 	cap_desc.caps.ac_type = AUDIO_TYPE_FEATURE;
 	cap_desc.caps.ac_format.hw = AUDIO_FU_VOLUME;
 	cap_desc.caps.ac_controls.hw[0] = volume;
 
-	int ret = ioctl(out_dev_fd, AUDIOIOC_SETVOLUME, (unsigned long)&cap_desc);
+	ret = ioctl(out_dev_fd, AUDIOIOC_SETVOLUME, (unsigned long)&cap_desc);
 	if (ret < 0) {
+		ret = AUDIO_MANAGER_FAIL;
 		printf("AUDIOIOC_SETVOLUME ioctl failed, ret = %d\n", ret);
 	}
-	return 0;
+	return ret;
 }

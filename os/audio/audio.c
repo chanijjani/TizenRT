@@ -379,10 +379,10 @@ static int audio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 	/* Handle built-in ioctl commands */
 
 	switch (cmd) {
-	/* AUDIOIOC_GETCAPS - Get the audio device capabilities.
-	 *
-	 *   ioctl argument:  A pointer to the audio_caps_s structure.
-	 */
+		/* AUDIOIOC_GETCAPS - Get the audio device capabilities.
+		 *
+		 *   ioctl argument:  A pointer to the audio_caps_s structure.
+		 */
 
 	case AUDIOIOC_GETCAPS: {
 		FAR struct audio_caps_s *caps = (FAR struct audio_caps_s *)((uintptr_t) arg);
@@ -443,10 +443,10 @@ static int audio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 	}
 	break;
 
-		/* AUDIOIOC_STOP - Stop the audio stream.
-		 *
-		 *   ioctl argument:  Audio session
-		 */
+	/* AUDIOIOC_STOP - Stop the audio stream.
+	 *
+	 *   ioctl argument:  Audio session
+	 */
 
 #ifndef CONFIG_AUDIO_EXCLUDE_STOP
 	case AUDIOIOC_STOP: {
@@ -466,10 +466,10 @@ static int audio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 	break;
 #endif							/* CONFIG_AUDIO_EXCLUDE_STOP */
 
-		/* AUDIOIOC_PAUSE - Pause the audio stream.
-		 *
-		 *   ioctl argument:  Audio session
-		 */
+	/* AUDIOIOC_PAUSE - Pause the audio stream.
+	 *
+	 *   ioctl argument:  Audio session
+	 */
 
 #ifndef CONFIG_AUDIO_EXCLUDE_PAUSE_RESUME
 
@@ -734,8 +734,8 @@ static inline void audio_error_handler(FAR struct audio_upperhalf_s *upper, FAR 
 	upper->started = false;
 	if (upper->usermq != NULL) {
 		/* We are always sending XRUN error msg since it is the
-		only type of error that we handle now. If new error scenario
-		is required, then we need to handle here */
+		   only type of error that we handle now. If new error scenario
+		   is required, then we need to handle here */
 		msg.msgId = AUDIO_MSG_XRUN;
 		msg.u.pPtr = NULL;
 #ifdef CONFIG_AUDIO_MULTI_SESSION

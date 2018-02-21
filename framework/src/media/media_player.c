@@ -39,17 +39,17 @@ enum play_state_e {
 typedef enum play_state_e play_state_t;
 
 struct media_play_context_s {
-	pthread_t           pth;
-	bool                thread_running;
+	pthread_t pth;
+	bool thread_running;
 	pthread_mutexattr_t mutex_attr_play;
-	pthread_mutex_t     mutex_play;
-	sem_t               sem_pause;
-	struct pcm         *pcmout;
-	unsigned int        buffer_size;
-	int                 fd;
-	int		    download_size;
-	media_format_t      format;
-	play_state_t        state;
+	pthread_mutex_t mutex_play;
+	sem_t sem_pause;
+	struct pcm *pcmout;
+	unsigned int buffer_size;
+	int fd;
+	int download_size;
+	media_format_t format;
+	play_state_t state;
 };
 
 static struct media_play_context_s g_pc;
@@ -123,7 +123,7 @@ play_result_t media_play(int fd, media_format_t format)
 			goto error_thread_init;
 		}
 
-		if (pthread_create(&g_pc.pth, &attr, (pthread_startroutine_t)player_worker, NULL) != 0) {
+		if (pthread_create(&g_pc.pth, &attr, (pthread_startroutine_t) player_worker, NULL) != 0) {
 			goto error_thread_init;
 		}
 	}
@@ -162,7 +162,7 @@ play_result_t media_stop_play(void)
 
 	PLAY_UNLOCK();
 
-	pthread_join(g_pc.pth, NULL);	
+	pthread_join(g_pc.pth, NULL);
 	g_pc.pth = -1;
 
 	return MEDIA_OK;
@@ -291,7 +291,6 @@ int player_worker(void *args)
 		PLAY_LOCK();
 		switch (g_pc.state) {
 		case PLAY_RUNNING:
-			printf("Record is played!!\n");
 			ret = read_data_pcm_write(buffer);
 			if (ret == 0) {
 				g_pc.state = PLAY_DRAINING;

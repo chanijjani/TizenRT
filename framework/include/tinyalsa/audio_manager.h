@@ -49,7 +49,8 @@ typedef enum {
 	AUDIO_MANAGER_FAIL = -1,
 	AUDIO_MANAGER_SUCCESS,
 	AUDIO_MANAGER_INVALID_PARAMS,
-} audio_manager_result_e;
+}
+audio_manager_result_e;
 
 typedef enum {
 	AUDIO_DEVICE_UNIDENTIFIED = -1,
@@ -57,22 +58,28 @@ typedef enum {
 	AUDIO_DEVICE_RESERVED
 } audio_device_status_e;
 
+typedef enum {
+	AUDIO_VOLUME_LOW = 30,
+	AUDIO_VOLUME_MEDIUM = 80,
+	AUDIO_VOLUME_HIGH = 100
+} audio_volume_e;
+
 typedef struct {
 	unsigned int volume;
 } audio_config_s;
 
 typedef struct {
-//	int audio_dev_id;
+//  int audio_dev_id;
 	char *dev_name;
 	audio_device_status_e status;
 	audio_config_s config;
-//	audio_dev_type_e direction;
+//  audio_dev_type_e direction;
 } audio_dev_info_s;
 
 audio_manager_result_e audio_manager_init(void);
 int get_avail_audio_card_id(void);
 int get_avail_audio_device_id(void);
-int set_audio_volume(unsigned int volume);
+audio_manager_result_e set_audio_volume(audio_volume_e volume);
 
 #if defined(__cplusplus)
 }								/* extern "C" */

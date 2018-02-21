@@ -164,7 +164,7 @@ static const struct audio_ops_s g_audioops = {
 	NULL,						/* read           */
 	NULL,						/* write          */
 	null_reserve,				/* reserve        */
-	null_release,				/* release        */
+	null_release				/* release        */
 };
 
 /****************************************************************************
