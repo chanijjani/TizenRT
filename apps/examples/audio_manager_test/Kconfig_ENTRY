@@ -1,0 +1,3 @@
+config ENTRY_AUDIO_MANAGER_TEST
+	bool "Audio manager test example"
+	depends on EXAMPLES_AUDIO_MANAGER_TEST

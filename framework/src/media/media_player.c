@@ -39,17 +39,17 @@ enum play_state_e {
 typedef enum play_state_e play_state_t;
 
 struct media_play_context_s {
-	pthread_t           pth;
-	bool                thread_running;
+	pthread_t pth;
+	bool thread_running;
 	pthread_mutexattr_t mutex_attr_play;
-	pthread_mutex_t     mutex_play;
-	sem_t               sem_pause;
-	struct pcm         *pcmout;
-	unsigned int        buffer_size;
-	int                 fd;
-	int		    download_size;
-	media_format_t      format;
-	play_state_t        state;
+	pthread_mutex_t mutex_play;
+	sem_t sem_pause;
+	struct pcm *pcmout;
+	unsigned int buffer_size;
+	int fd;
+	int download_size;
+	media_format_t format;
+	play_state_t state;
 };
 
 static struct media_play_context_s g_pc;
@@ -69,10 +69,19 @@ play_result_t media_play(int fd, media_format_t format)
 	config.period_count = CONFIG_AUDIO_NUM_BUFFERS;
 	config.format = PCM_FORMAT_S16_LE;
 
+#ifndef CONFIG_EXAMPLES_AUDIO_MANAGER_TEST
+	int audio_card_id = get_avail_audio_card_id();
+	int audio_device_id = get_avail_audio_device();
+	g_pc.pcmout = pcm_open(audio_card_id, audio_device_id, PCM_OUT, &config);
+	if (!g_pc.pcmout) {
+		return PLAY_ERROR_DRIVER;
+	}
+#else
 	g_pc.pcmout = pcm_open(0, 0, PCM_OUT, &config);
 	if (!g_pc.pcmout) {
 		return PLAY_ERROR_DRIVER;
 	}
+#endif
 
 	g_pc.buffer_size = pcm_frames_to_bytes(g_pc.pcmout, pcm_get_buffer_size(g_pc.pcmout));
 	g_pc.download_size = 0;
@@ -114,7 +123,7 @@ play_result_t media_play(int fd, media_format_t format)
 			goto error_thread_init;
 		}
 
-		if (pthread_create(&g_pc.pth, &attr, (pthread_startroutine_t)player_worker, NULL) != 0) {
+		if (pthread_create(&g_pc.pth, &attr, (pthread_startroutine_t) player_worker, NULL) != 0) {
 			goto error_thread_init;
 		}
 	}
@@ -153,7 +162,7 @@ play_result_t media_stop_play(void)
 
 	PLAY_UNLOCK();
 
-	pthread_join(g_pc.pth, NULL);	
+	pthread_join(g_pc.pth, NULL);
 	g_pc.pth = -1;
 
 	return MEDIA_OK;

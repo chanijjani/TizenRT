@@ -85,9 +85,9 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define DMA_BUFFER_MAX_SIZE 65536 /* 64K */
+#define DMA_BUFFER_MAX_SIZE 65536	/* 64K */
 
-#define DMA_BUFFER_MIN_SIZE 4096 /* 4K */
+#define DMA_BUFFER_MIN_SIZE 4096	/* 4K */
 
 #define AUDIO_BUFFER_MAX_NUM 16
 
@@ -126,14 +126,22 @@ struct sample_rate_entry_s {
 };
 
 static const struct sample_rate_entry_s g_sample_entry[] = {
-	{AUDIO_SAMP_RATE_8K, codec_init_pll_8K, sizeof(codec_init_pll_8K)},
-	{AUDIO_SAMP_RATE_11K, codec_init_pll_11K, sizeof(codec_init_pll_11K)},
-	{AUDIO_SAMP_RATE_16K, codec_init_pll_16K, sizeof(codec_init_pll_16K)},
-	{AUDIO_SAMP_RATE_22K, codec_init_pll_22K, sizeof(codec_init_pll_22K)},
-	{AUDIO_SAMP_RATE_32K, codec_init_pll_32K, sizeof(codec_init_pll_32K)},
-	{AUDIO_SAMP_RATE_44K, codec_init_pll_44K, sizeof(codec_init_pll_44K)},
+	{AUDIO_SAMP_RATE_8K, codec_init_pll_8K, sizeof(codec_init_pll_8K)}
+	,
+	{AUDIO_SAMP_RATE_11K, codec_init_pll_11K, sizeof(codec_init_pll_11K)}
+	,
+	{AUDIO_SAMP_RATE_16K, codec_init_pll_16K, sizeof(codec_init_pll_16K)}
+	,
+	{AUDIO_SAMP_RATE_22K, codec_init_pll_22K, sizeof(codec_init_pll_22K)}
+	,
+	{AUDIO_SAMP_RATE_32K, codec_init_pll_32K, sizeof(codec_init_pll_32K)}
+	,
+	{AUDIO_SAMP_RATE_44K, codec_init_pll_44K, sizeof(codec_init_pll_44K)}
+	,
 	{AUDIO_SAMP_RATE_48K, codec_init_pll_48K, sizeof(codec_init_pll_48K)}
 };
+
+static unsigned int g_volume;
 
 /****************************************************************************
  * Name: delay
@@ -239,23 +247,26 @@ static void alc5658_setregs(struct alc5658_dev_s *priv)
 {
 	alc5658_writereg(priv, ALC5658_IN1, (0 + 16) << 8);
 	alc5658_writereg(priv, ALC5658_HPOUT, 0);
-	alc5658_writereg(priv, ALC5658_HPOUT_L, 0xd00);
-	alc5658_writereg(priv, ALC5658_HPOUT_R, 0x700);
+	alc5658_writereg(priv, ALC5658_HPOUT_L, g_volume);
+	alc5658_writereg(priv, ALC5658_HPOUT_R, g_volume);
+//  alc5658_writereg(priv, ALC5658_HPOUT_L, 0xd00);
+//  alc5658_writereg(priv, ALC5658_HPOUT_R, 0x700);
 }
 
 static void alc5658_getregs(struct alc5658_dev_s *priv)
 {
-	audvdbg("MIC GAIN 0x%x\n", (uint32_t)alc5658_readreg(priv, ALC5658_IN1));
-	audvdbg("MUTE HPOUT MUTE %x\n", (uint32_t)alc5658_readreg(priv, ALC5658_HPOUT));
-	audvdbg("VOLL 0x%x\n", (uint32_t)alc5658_readreg(priv, ALC5658_HPOUT_L));
-	audvdbg("VOLR 0x%x\n", (uint32_t)alc5658_readreg(priv, ALC5658_HPOUT_R));
+	audvdbg("MIC GAIN 0x%x\n", (uint32_t) alc5658_readreg(priv, ALC5658_IN1));
+	audvdbg("MUTE HPOUT MUTE %x\n", (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT));
+	audvdbg("VOLL 0x%x\n", (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_L));
+	audvdbg("VOLR 0x%x\n", (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_R));
+	printf("[getregs] VOLL %x VOLR %x\n\n", (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_L), (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_R));
 }
 
 /************************************************************************************
  * Name: alc5658_exec_i2c_script
  *
  * Description:
- *   Executes given script through i2c to configuure ALC5658 device.
+ *   Executes given script through i2c to configure ALC5658 device.
  *
  ************************************************************************************/
 static void alc5658_exec_i2c_script(FAR struct alc5658_dev_s *priv, t_codec_init_script_entry *script, uint32_t size)
@@ -317,12 +328,11 @@ static void alc5658_takesem(sem_t *sem)
 #ifndef CONFIG_AUDIO_EXCLUDE_VOLUME
 static void alc5658_setvolume(FAR struct alc5658_dev_s *priv, uint16_t volume, bool mute)
 {
-
-	audvdbg(" alc5658_setvolume volume=%u mute=%u\n", volume, mute);
-
-	priv->volume = volume;
-	priv->mute = mute;
-
+	/** TODO: Need to process balance and mute **/
+	if (mute == false) {
+		g_volume = volume << 8;
+		audvdbg("[SetVolume] MUTE %x, VOLL %x VOLR %x\n\n", (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT), (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_L), (uint32_t) alc5658_readreg(priv, ALC5658_HPOUT_R));
+	}
 }
 #endif							/* CONFIG_AUDIO_EXCLUDE_VOLUME */
 
@@ -337,7 +347,7 @@ static void alc5658_setvolume(FAR struct alc5658_dev_s *priv, uint16_t volume, b
 #ifndef CONFIG_AUDIO_EXCLUDE_VOLUME
 static inline uint16_t alc5658_scalevolume(uint16_t volume, b16_t scale)
 {
-	return b16toi((b16_t)volume * scale);
+	return b16toi((b16_t) volume * scale);
 }
 #endif
 
@@ -424,7 +434,7 @@ static int alc5658_getcaps(FAR struct audio_lowerhalf_s *dev, int type, FAR stru
 	caps->ac_controls.w = 0;
 
 	switch (caps->ac_type) {
-	/* Caller is querying for the types of units we support */
+		/* Caller is querying for the types of units we support */
 
 	case AUDIO_TYPE_QUERY:
 
@@ -458,7 +468,7 @@ static int alc5658_getcaps(FAR struct audio_lowerhalf_s *dev, int type, FAR stru
 
 		break;
 
-	/* Provide capabilities of our INPUT & OUTPUT unit */
+		/* Provide capabilities of our INPUT & OUTPUT unit */
 	case AUDIO_TYPE_INPUT:
 	case AUDIO_TYPE_OUTPUT:
 
@@ -483,7 +493,7 @@ static int alc5658_getcaps(FAR struct audio_lowerhalf_s *dev, int type, FAR stru
 
 		break;
 
-	/* Provide capabilities of our FEATURE units */
+		/* Provide capabilities of our FEATURE units */
 
 	case AUDIO_TYPE_FEATURE:
 
@@ -502,7 +512,7 @@ static int alc5658_getcaps(FAR struct audio_lowerhalf_s *dev, int type, FAR stru
 
 		break;
 
-	/* Provide capabilities of our PROCESSING unit */
+		/* Provide capabilities of our PROCESSING unit */
 
 	case AUDIO_TYPE_PROCESSING:
 
@@ -530,7 +540,7 @@ static int alc5658_getcaps(FAR struct audio_lowerhalf_s *dev, int type, FAR stru
 
 		break;
 
-	/* All others we don't support */
+		/* All others we don't support */
 
 	default:
 
@@ -582,14 +592,11 @@ static int alc5658_configure(FAR struct audio_lowerhalf_s *dev, FAR const struct
 #ifndef CONFIG_AUDIO_EXCLUDE_VOLUME
 		case AUDIO_FU_VOLUME: {
 			/* Set the volume */
-
 			uint16_t volume = caps->ac_controls.hw[0];
-			audvdbg("    Volume: %d\n", volume);
-
-			if (volume >= 0 && volume <= 1000) {
-				/* Scale the volume setting to the range {0.. 63} */
-
-				alc5658_setvolume(priv, (63 * volume / 1000), priv->mute);
+			printf("    Volume: %d = %x\n", volume, volume);
+			if (volume >= 30 && volume <= 100) {
+				alc5658_setvolume(priv, volume, priv->mute);
+				ret = OK;
 			} else {
 				ret = -EDOM;
 			}
@@ -673,8 +680,8 @@ static int alc5658_configure(FAR struct audio_lowerhalf_s *dev, FAR const struct
 		break;
 	}
 
-	alc5658_setregs(priv);
-	alc5658_getregs(priv);
+//  alc5658_setregs(priv);
+//  alc5658_getregs(priv);
 
 	return ret;
 }
@@ -697,7 +704,7 @@ static int alc5658_shutdown(FAR struct audio_lowerhalf_s *dev)
 
 	alc5658_takesem(&priv->devsem);
 	sq_entry_t *tmp = NULL;
-	for (tmp = (sq_entry_t *)sq_peek(&priv->pendq); tmp; tmp = sq_next(tmp)) {
+	for (tmp = (sq_entry_t *) sq_peek(&priv->pendq); tmp; tmp = sq_next(tmp)) {
 		sq_rem(tmp, &priv->pendq);
 		audvdbg("(alcshutdown)removing tmp with addr 0x%x\n", tmp);
 	}
@@ -725,9 +732,9 @@ static void alc5658_io_err_cb(FAR struct i2s_dev_s *dev, FAR void *arg, int flag
 
 	/* Call upper callback, let it post msg to user q
 	 * apb is set NULL, okay? Rethink
-	*/
+	 */
 	priv->dev.upper(priv->dev.priv, AUDIO_CALLBACK_IOERR, NULL, flags);
-	
+
 }
 
 /****************************************************************************
@@ -895,8 +902,8 @@ static void alc5658_rxtxcallback(FAR struct i2s_dev_s *dev, FAR struct ap_buffer
 
 	alc5658_takesem(&priv->devsem);
 	sq_entry_t *tmp;
-	for (tmp = (sq_entry_t *)sq_peek(&priv->pendq); tmp; tmp = sq_next(tmp)) {
-		if (tmp == (sq_entry_t *)apb) {
+	for (tmp = (sq_entry_t *) sq_peek(&priv->pendq); tmp; tmp = sq_next(tmp)) {
+		if (tmp == (sq_entry_t *) apb) {
 			sq_rem(tmp, &priv->pendq);
 			audvdbg("found the apb to remove 0x%x\n", tmp);
 			break;
@@ -927,13 +934,13 @@ static int alc5658_enqueuebuffer(FAR struct audio_lowerhalf_s *dev, FAR struct a
 	if (!priv->running) {
 		/* Add the new buffer to the tail of pending audio buffers */
 		alc5658_takesem(&priv->devsem);
-		sq_addlast((sq_entry_t*)&apb->dq_entry, &priv->pendq);
+		sq_addlast((sq_entry_t *)&apb->dq_entry, &priv->pendq);
 		audvdbg("enqueue added buf 0x%x\n", apb);
 		alc5658_givesem(&priv->devsem);
 		return OK;
 	}
 
-	if (priv->inout) {		/* record */
+	if (priv->inout) {			/* record */
 		ret = I2S_RECEIVE(priv->i2s, apb, alc5658_rxtxcallback, priv, CONFIG_ALC5658_I2S_TIMEOUT);
 	} else {					/* playback */
 		ret = I2S_SEND(priv->i2s, apb, alc5658_rxtxcallback, priv, CONFIG_ALC5658_I2S_TIMEOUT);
@@ -992,11 +999,11 @@ static int alc5658_ioctl(FAR struct audio_lowerhalf_s *dev, int cmd, unsigned lo
 		bufinfo->nbuffers = CONFIG_ALC5658_NUM_BUFFERS;
 #else
 		buf_size = bufinfo->buffer_size * (priv->bpsamp >> 3) * priv->nchannels;
-		
+
 		if (buf_size > DMA_BUFFER_MAX_SIZE || buf_size < DMA_BUFFER_MIN_SIZE) {
 			bufinfo->buffer_size = CONFIG_ALC5658_BUFFER_SIZE;
 		}
-		
+
 		if (bufinfo->nbuffers < AUDIO_BUFFER_MIN_NUM || bufinfo->nbuffers > AUDIO_BUFFER_MAX_NUM) {
 			bufinfo->nbuffers = CONFIG_ALC5658_NUM_BUFFERS;
 		}
@@ -1251,7 +1258,7 @@ static void alc5658_hw_reset(FAR struct alc5658_dev_s *priv)
 
 	alc5658_exec_i2c_script(priv, codec_reset_script, sizeof(codec_reset_script) / sizeof(t_codec_init_script_entry));
 	alc5658_writereg(priv, ALC5658_IN1, (10 + 16) << 8);
-	audvdbg("MIC GAIN 0x%x\n", (uint32_t)alc5658_readreg(priv, ALC5658_IN1));
+	audvdbg("MIC GAIN 0x%x\n", (uint32_t) alc5658_readreg(priv, ALC5658_IN1));
 }
 
 /****************************************************************************
