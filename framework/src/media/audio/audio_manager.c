@@ -121,6 +121,8 @@ struct audio_device_config_s {
 
 struct audio_resample_s {
 	bool necessary;
+	uint8_t channels;
+	float channel_ratio;
 	uint8_t samprate_types;
 	unsigned int from;
 	unsigned int to;
@@ -340,6 +342,7 @@ static audio_manager_result_t get_supported_sample_rate(audio_io_direction_t dir
 	}
 
 	card->resample.samprate_types = caps_desc.caps.ac_controls.b[0];
+	card->resample.channels = caps_desc.caps.ac_channels;
 	medvdbg("samprate_type : %d\n", card->resample.samprate_types);
 	
 errout_with_fd:
@@ -456,10 +459,11 @@ static unsigned int resample_stream_in(audio_card_info_t *card, void *data, unsi
 	srcData.out_buf_length = card->resample.buffer_size;
 
 	while (frames > used_frames) {
-		srcData.data_in = card->resample.buffer + get_input_frames_to_byte(used_frames);
+		uint8_t channels = card->resample.channels * card->resample.channel_ratio;
+		srcData.data_in = card->resample.buffer + get_input_frames_to_byte(used_frames, channels);
 		srcData.input_frames = frames - used_frames;
-		srcData.data_out = data + get_input_frames_to_byte(resampled_frames);
-		medvdbg("data_in addr = 0x%x + %d\t", srcData.data_in, get_input_frames_to_byte(used_frames));
+		srcData.data_out = data + get_input_frames_to_byte(resampled_frames, channels);
+		medvdbg("data_in addr = 0x%x + %d\t", srcData.data_in, get_input_frames_to_byte(used_frames, channels));
 		if (src_simple(card->resample.handle, &srcData) != SRC_ERR_NO_ERROR) {
 			meddbg("Fail to resample in:%d/%d, out:%d, to %u from %u\n", used_frames, frames, srcData.desired_sample_rate, srcData.origin_sample_rate);
 			return AUDIO_MANAGER_RESAMPLE_FAIL;
@@ -700,10 +704,7 @@ audio_manager_result_t set_audio_stream_in(unsigned int channels, unsigned int s
 
 	pthread_mutex_lock(&(card->card_mutex));
 
-	/* TODO Resample channel logic & sample rate based on policy should be added */
-	if (channels > AUDIO_STREAM_CHANNEL_MONO) {
-		channels = AUDIO_STREAM_CHANNEL_STEREO;
-	}
+	card->resample.channel_ratio = channels / card->resample.channels;
 
 	memset(&config, 0, sizeof(struct pcm_config));
 	config.channels = channels;
@@ -728,7 +729,7 @@ audio_manager_result_t set_audio_stream_in(unsigned int channels, unsigned int s
 		card->resample.to = sample_rate;
 		card->resample.ratio = (float)sample_rate / (float)config.rate;
 		card->resample.handle = src_init(CONFIG_AUDIO_RESAMPLER_BUFSIZE);
-		card->resample.buffer = malloc((int)((float)get_input_frames_to_byte(get_input_frame_count()) / card->resample.ratio) + 1);	// +1 for floating point margin
+		card->resample.buffer = malloc((int)((float)get_input_frames_to_byte(get_input_frame_count(), channels) / card->resample.ratio) + 1);	// +1 for floating point margin
 		if (!card->resample.buffer) {
 			meddbg("malloc for a resampling buffer(stream_in) is failed\n");
 			ret = AUDIO_MANAGER_RESAMPLE_FAIL;
@@ -874,11 +875,12 @@ int start_audio_stream_in(void *data, unsigned int frames)
 		//       To  : * pcm_readi - 1 resampling
 		if (card->resample.necessary) {
 			unsigned int frames_to_read = (unsigned int)((float)frames / card->resample.ratio);
+			uint8_t channels = card->resample.channels * card->resample.channel_ratio;
 			if (frames_to_read > (get_input_frame_count() / card->resample.ratio)) {
 				frames_to_read = (get_input_frame_count() / card->resample.ratio);
 			}
 
-			card->resample.buffer_size = get_input_frames_to_byte(frames);
+			card->resample.buffer_size = get_input_frames_to_byte(frames,channels);
 
 			ret = pcm_readi(card->pcm, card->resample.buffer, frames_to_read);
 			medvdbg("Read frames (%d/%u) for resample to %u\n", ret, frames_to_read, frames);
@@ -889,7 +891,7 @@ int start_audio_stream_in(void *data, unsigned int frames)
 
 		if (ret == -EPIPE) {
 			ret = pcm_prepare(card->pcm);
-			meddbg("PCM is reprepared\n");
+			medvdbg("PCM is reprepared\n");
 			if (ret != OK) {
 				meddbg("Fail to pcm_prepare()\n");
 				ret = AUDIO_MANAGER_XRUN_STATE;
@@ -1109,7 +1111,11 @@ audio_manager_result_t stop_audio_stream_out(void)
 		}
 	} else {
 		if ((ret = pcm_drain(card->pcm)) < 0) {
-			meddbg("pcm_drain faled, ret = %d\n", ret);
+			if (ret == -EPIPE) {
+				ret = AUDIO_MANAGER_SUCCESS;
+			} else {
+				meddbg("pcm_drain faled, ret = %d\n", ret);
+			}
 		}
 	}
 	card->config[card->device_id].status = AUDIO_CARD_READY;
@@ -1199,13 +1205,16 @@ unsigned int get_input_frame_count(void)
 	return pcm_get_buffer_size(g_audio_in_cards[g_actual_audio_in_card_id].pcm);
 }
 
-unsigned int get_input_frames_to_byte(unsigned int frames)
+unsigned int get_input_frames_to_byte(uint32_t frames, uint8_t channels)
 {
-	if ((g_actual_audio_in_card_id < 0) || (frames == 0)) {
+	int buffer_size = 0;
+	audio_card_info_t *card;
+	if ((g_actual_audio_in_card_id < 0) || (frames == 0) || channels > AUDIO_STREAM_CHANNEL_STEREO) {
 		return 0;
 	}
-
-	return pcm_frames_to_bytes(g_audio_in_cards[g_actual_audio_in_card_id].pcm, frames);
+	card = &g_audio_in_cards[g_actual_audio_in_card_id];
+	buffer_size = frames * channels * pcm_format_to_bits(pcm_get_format(card->pcm)) >> 3;
+	return buffer_size;
 }
 
 unsigned int get_input_bytes_to_frame(unsigned int bytes)

@@ -310,11 +310,11 @@ unsigned int get_input_frame_count(void);
  *
  * Input parameter:
  *   frames: the target of which byte size is returned.
- *
+ *   channels: mono(=1) or stereo(=2)
  * Return Value:
  *   On success, the byte size of the frame in input stream. Otherwise, 0.
  ****************************************************************************/
-unsigned int get_input_frames_to_byte(unsigned int frames);
+unsigned int get_input_frames_to_byte(unsigned int frames, uint8_t channels);
 
 /****************************************************************************
  * Name: get_input_bytes_to_frame
