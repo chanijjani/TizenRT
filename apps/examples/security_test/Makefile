@@ -28,6 +28,9 @@ THREADEXEC = TASH_EXECMD_ASYNC
 ASRCS =
 CSRCS =
 MAINSRC = security_test_main.c
+ifeq ($(CONFIG_EXAMPLES_SECURITYHAL_STRESS_TOOL),y)
+CSRCS = security_test_stress.c
+endif
 
 AOBJS = $(ASRCS:.S=$(OBJEXT))
 COBJS = $(CSRCS:.c=$(OBJEXT))

@@ -5,18 +5,31 @@
 
 config EXAMPLES_SECURITY_TEST
 	bool "Security Test"
-	depends on TLS_WITH_SSS && SUPPORT_FULL_SECURITY
+	depends on TLS_WITH_SSS
 	default n
 
 if EXAMPLES_SECURITY_TEST
-
 config EXAMPLES_SECURITY_TEST_PROGNAME
 	string "Program name"
 	default "security selftest"
 	depends on BUILD_KERNEL
 
+config EXAMPLES_SECURITYHAL_STRESS_TOOL
+	bool "Enable Sterss Tool for Security HAL API"
+	default n
+	depends on STRESS_TOOL
+
+if EXAMPLES_SECURITYHAL_STRESS_TOOL
+config SECURITYHAL_TEST_TRIAL
+	int "Number of test trial"
+	default 5
+	---help---
+		Number of test trial
+
+endif # EXAMPLES_SECURITYHAL_STRESS_TOOL		
 endif # EXAMPLES_SECURITY_TEST
 
 config USER_ENTRYPOINT
 	string
 	default "security_test_main" if ENTRY_SECURITY_TEST
+	default "security_hal_run_stress_test" if ENTRY_SECURITY_HAL_TEST
