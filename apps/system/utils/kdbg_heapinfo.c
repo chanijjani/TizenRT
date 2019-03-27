@@ -217,7 +217,7 @@ static void heapinfo_show_taskinfo(struct mm_heap_s *heap)
 	printf("-------|");
 #endif
 	printf("-------|-----------|-----------|----------\n");
-
+	/*
 	for (heap_idx = 0; heap_idx < CONFIG_MM_NHEAPS; heap_idx++) {
 		for (tcb_idx = 0; tcb_idx < CONFIG_MAX_TASKS; tcb_idx++) {
 			if (heap[heap_idx].alloc_list[tcb_idx].pid != HEAPINFO_INIT_INFO) {
@@ -225,7 +225,7 @@ static void heapinfo_show_taskinfo(struct mm_heap_s *heap)
 			}
 		}
 	}
-
+	*/
 #if !defined(CONFIG_FS_AUTOMOUNT_PROCFS)
 	if (!is_mounted) {
 		/* Detach mounted Procfs */
@@ -276,7 +276,7 @@ int kdbg_heapinfo(int argc, char **args)
 #endif
 		switch (option) {
 		case 'i':
-			heapinfo_peak_init(heap);
+//			heapinfo_peak_init(heap);
 			printf("Peak allocated memory size is cleared\n");
 			return OK;
 		case 'a':
@@ -370,7 +370,7 @@ int kdbg_heapinfo(int argc, char **args)
 			} else
 #endif
 			{
-				heapinfo_parse(&heap[heap_idx], heapinfo_mode, heapinfo_pid);
+//				heapinfo_parse(&heap[heap_idx], heapinfo_mode, heapinfo_pid);
 			}
 		}
 	} else if (heapinfo_display_flag == HEAPINFO_DISPLAY_SPECIFIC_HEAP) {
@@ -385,7 +385,7 @@ int kdbg_heapinfo(int argc, char **args)
 		} else
 #endif
 		{
-			heapinfo_parse(&heap[heap_idx], heapinfo_mode, HEAPINFO_PID_ALL);
+//			heapinfo_parse(&heap[heap_idx], heapinfo_mode, HEAPINFO_PID_ALL);
 		}
 	} else
 #endif
@@ -395,7 +395,7 @@ int kdbg_heapinfo(int argc, char **args)
 	} else
 #endif
 	{
-		heapinfo_parse(heap, heapinfo_mode, heapinfo_pid);
+//		heapinfo_parse(heap, heapinfo_mode, heapinfo_pid);
 	}
 
 #if CONFIG_MM_NHEAPS > 1

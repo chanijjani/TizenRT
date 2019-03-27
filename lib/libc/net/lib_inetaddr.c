@@ -62,10 +62,9 @@
 #include <arpa/inet.h>
 
 typedef unsigned char u8_t;
-typedef unsigned int u32_t;
 
 /** 255.255.255.255 */
-#define IPADDR_NONE         ((u32_t)0xffffffffUL)
+#define IPADDR_NONE         ((unsigned int)0xffffffffUL)
 
 #define in_range(c, lo, up)  ((u8_t)c >= lo && (u8_t)c <= up)
 #define isdigit(c)           in_range(c, '0', '9')

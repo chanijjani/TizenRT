@@ -486,3 +486,5 @@ menuconfig DRIVERS_WIRELESS
 		Drivers for various wireless devices.
 
 source drivers/wireless/Kconfig
+source drivers/testcase/Kconfig
+source drivers/seclink/Kconfig
