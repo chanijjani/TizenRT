@@ -86,6 +86,7 @@ struct seclink_crypto_info {
 	hal_data *input;
 	hal_data *output;
 	hal_aes_param *aes_param;
+	hal_rsa_mode *rsa_mode;
 };
 
 struct seclink_ss_info {
@@ -161,9 +162,9 @@ int sl_aes_encrypt(sl_ctx hnd, hal_data *dec_data, hal_aes_param *aes_param, uin
 
 int sl_aes_decrypt(sl_ctx hnd, hal_data *enc_data, hal_aes_param *aes_param, uint32_t key_idx, _OUT_ hal_data *dec_data);
 
-int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, uint32_t key_idx, _OUT_ hal_data *enc_data);
+int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *enc_data);
 
-int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, uint32_t key_idx, _OUT_ hal_data *dec_data);
+int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *dec_data);
 
 
 /*  Secure Storage */

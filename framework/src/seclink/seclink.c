@@ -423,7 +423,7 @@ int sl_aes_encrypt(sl_ctx hnd, hal_data *dec_data, hal_aes_param *aes_param, uin
 	SL_CHECK_VALID(hnd);
 
 	struct _seclink_s_ *sl = (struct _seclink_s_ *)hnd;
-	struct seclink_crypto_info info = {key_idx, dec_data, enc_data, aes_param};
+	struct seclink_crypto_info info = {key_idx, dec_data, enc_data, aes_param, NULL};
 	struct seclink_req req = {.req_type.crypto = &info, 0};
 
 	SL_CALL(sl, SECLINK_HAL_AESENCRYPT, req);
@@ -438,7 +438,7 @@ int sl_aes_decrypt(sl_ctx hnd, hal_data *enc_data, hal_aes_param *aes_param, uin
 	SL_CHECK_VALID(hnd);
 
 	struct _seclink_s_ *sl = (struct _seclink_s_ *)hnd;
-	struct seclink_crypto_info info = {key_idx, enc_data, dec_data, aes_param};
+	struct seclink_crypto_info info = {key_idx, enc_data, dec_data, aes_param, NULL};
 	struct seclink_req req = {.req_type.crypto = &info, 0};
 
 	SL_CALL(sl, SECLINK_HAL_AESDECRYPT, req);
@@ -446,14 +446,14 @@ int sl_aes_decrypt(sl_ctx hnd, hal_data *enc_data, hal_aes_param *aes_param, uin
 	return req.res;
 }
 
-int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, uint32_t key_idx, _OUT_ hal_data *enc_data)
+int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *enc_data)
 {
 	SL_ENTER;
 
 	SL_CHECK_VALID(hnd);
 
 	struct _seclink_s_ *sl = (struct _seclink_s_ *)hnd;
-	struct seclink_crypto_info info = {key_idx, dec_data, enc_data, NULL};
+	struct seclink_crypto_info info = {key_idx, dec_data, enc_data, NULL, rsa_mode};
 	struct seclink_req req = {.req_type.crypto = &info, 0};
 
 	SL_CALL(sl, SECLINK_HAL_RSADECRYPT, req);
@@ -461,14 +461,14 @@ int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, uint32_t key_idx, _OUT_ hal_d
 	return req.res;
 }
 
-int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, uint32_t key_idx, _OUT_ hal_data *dec_data)
+int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *dec_data)
 {
 	SL_ENTER;
 
 	SL_CHECK_VALID(hnd);
 
 	struct _seclink_s_ *sl = (struct _seclink_s_ *)hnd;
-	struct seclink_crypto_info info = {key_idx, enc_data, dec_data, NULL};
+	struct seclink_crypto_info info = {key_idx, enc_data, dec_data, NULL, rsa_mode};
 	struct seclink_req req = {.req_type.crypto = &info, 0};
 
 	SL_CALL(sl, SECLINK_HAL_RSADECRYPT, req);

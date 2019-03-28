@@ -188,10 +188,11 @@ int seclink_test(void)
 	SECTEST_CALL(sl_aes_decrypt(hnd, &enc, &aes_param, SECTEST_KEY_IDX, &output));
 	seclink_free(&output);
 
-	SECTEST_CALL(sl_rsa_encrypt(hnd, &dec, SECTEST_KEY_IDX, &output));
+	hal_rsa_mode crypto_rsa_mode = {HAL_RSASSA_PKCS1_PSS_MGF1, HAL_HASH_SHA256};
+	SECTEST_CALL(sl_rsa_encrypt(hnd, &dec, &crypto_rsa_mode, SECTEST_KEY_IDX, &output));
 	seclink_free(&output);
 
-	SECTEST_CALL(sl_rsa_decrypt(hnd, &enc, SECTEST_KEY_IDX, &output));
+	SECTEST_CALL(sl_rsa_decrypt(hnd, &enc, &crypto_rsa_mode, SECTEST_KEY_IDX, &output));
 	seclink_free(&output);
 
 	/*

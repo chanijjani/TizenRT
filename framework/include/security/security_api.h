@@ -47,33 +47,29 @@ typedef struct _security_csr {
 } security_csr;
 
 typedef enum {
-	RSAES_PKCS1_V1_5 = 0,
-	RSAES_PKCS1_OAEP_MGF1_SHA1 = 1,
-	RSAES_PKCS1_OAEP_MGF1_SHA224 = 2,
-	RSAES_PKCS1_OAEP_MGF1_SHA256 = 3,
-	RSAES_PKCS1_OAEP_MGF1_SHA384 = 4,
-	RSAES_PKCS1_OAEP_MGF1_SHA512 = 5,
-	RSASSA_PKCS1_V1_5_MD5 = 6,
-	RSASSA_PKCS1_V1_5_SHA1 = 7,
-	RSASSA_PKCS1_V1_5_SHA224 = 8,
-	RSASSA_PKCS1_V1_5_SHA256 = 9,
-	RSASSA_PKCS1_V1_5_SHA384 = 10,
-	RSASSA_PKCS1_V1_5_SHA512 = 11,
-	RSASSA_PKCS1_PSS_MGF1_SHA1 = 12,
-	RSASSA_PKCS1_PSS_MGF1_SHA224 = 13,
-	RSASSA_PKCS1_PSS_MGF1_SHA256 = 14,
-	RSASSA_PKCS1_PSS_MGF1_SHA384 = 15,
-	RSASSA_PKCS1_PSS_MGF1_SHA512 = 16,
-} security_rsa_mode;
+	RSASSA_PKCS1_V1_5,
+	RSASSA_PKCS1_PSS_MGF1,
+	RSASSA_UNKNOWN,
+} security_rsa_algo;
 
 typedef enum {
-	ECDSA_BRAINPOOL_P256R1 = 0,
-	ECDSA_BRAINPOOL_P384R1 = 1,
-	ECDSA_BRAINPOOL_P512R1 = 2,
-	ECDSA_SEC_P256R1 = 3,
-	ECDSA_SEC_P384R1 = 4,
-	ECDSA_SEC_P521R1 = 5,
+	ECDSA_BRAINPOOL_P256R1, 
+	ECDSA_BRAINPOOL_P384R1,
+	ECDSA_BRAINPOOL_P512R1,
+	ECDSA_SEC_P192R1,
+	ECDSA_SEC_P224R1,
+	ECDSA_SEC_P256R1,
+	ECDSA_SEC_P384R1,
+	ECDSA_SEC_P521R1,
+	ECDSA_UNKNOWN,
 } security_ecdsa_curve;
+
+typedef enum {
+	DH_1024,
+	DH_2048,
+	DH_4096,
+	DH_UNKNOWN,
+} security_dh_key_type;
 
 typedef enum {
 	AES_128,
@@ -86,36 +82,75 @@ typedef enum {
 	ECC_BRAINPOOL_P256R1,
 	ECC_BRAINPOOL_P384R1,
 	ECC_BRAINPOOL_P512R1,
+	ECC_SEC_P192R1,
+	ECC_SEC_P224R1,
 	ECC_SEC_P256R1,
 	ECC_SEC_P384R1,
 	ECC_SEC_P521R1,
+	HMAC_MD5,
+	HMAC_SHA1,
+	HMAC_SHA224,
+	HMAC_SHA256,
+	HMAC_SHA384,
+	HMAC_SHA512,
+	ALGO_UNKNOWN,	
+} security_algorithm;
+
+typedef enum {
+	AES_ECB_NOPAD,
+	AES_ECB_ISO9797_M1,
+	AES_ECB_ISO9797_M2,
+	AES_ECB_PKCS5,
+	AES_ECB_PKCS7,
+	AES_CBC_NOPAD,
+	AES_CBC_ISO9797_M1,
+	AES_CBC_ISO9797_M2,
+	AES_CBC_PKCS5,
+	AES_CBC_PKCS7,
+	AES_CTR,
+	AES_UNKNWON,
+} security_aes_algo;
+
+typedef enum {
 	HASH_MD5,
 	HASH_SHA1,
 	HASH_SHA224,
 	HASH_SHA256,
 	HASH_SHA384,
 	HASH_SHA512,
-	HMAC_SHA1,
-	HMAC_SHA224,
-	HMAC_SHA256,
-	HMAC_SHA384,
-	HMAC_SHA512,
-	UNKNOWN_ALGO,
-} security_algorithm;
+	HASH_UNKNOWN,
+} security_hash_type;
 
-typedef enum {
-	AES_ECB_NOPAD = 0,
-	AES_ECB_ISO9797_M1 = 1,
-	AES_ECB_ISO9797_M2 = 2,
-	AES_ECB_PKCS5 = 3,
-	AES_ECB_PKCS7 = 4,
-	AES_CBC_NOPAD = 5,
-	AES_CBC_ISO9797_M1 = 6,
-	AES_CBC_ISO9797_M2 = 7,
-	AES_CBC_PKCS5 = 8,
-	AES_CBC_PKCS7 = 9,
-	AES_CTR = 10
-} security_aes_mode;
+typedef struct _security_rsa_mode {
+	security_rsa_algo rsa_a;
+	security_hash_type hash_t;
+	security_hash_type mgf;
+	uint32_t salt_byte_len;
+} security_rsa_mode;
+
+typedef struct _security_aes_param {
+	security_aes_algo mode;
+	unsigned char *iv;
+	unsigned int iv_len;
+} security_aes_param;
+
+typedef struct _security_ecdsa_mode {
+	security_ecdsa_curve curve;
+	security_hash_type hash_t;
+} security_ecdsa_mode;
+
+typedef struct _security_dh_data {
+	security_dh_key_type mode;
+	security_data *G;
+	security_data *P;
+	security_data *pubkey;
+} security_dh_data;
+
+typedef struct _security_ecdh_data {
+	security_ecdsa_curve curve;
+	security_data *pubkey_x;
+	security_data *pubkey_y;
+} security_ecdh_data;
 
 typedef struct security_storage_file {
 	char 	name [20];
@@ -141,21 +176,21 @@ int auth_get_certificate(const char *cert_name, security_data *cert);
 int auth_remove_certificate(const char *cert_name);
 int auth_get_rsa_signature(security_rsa_mode mode, const char *key_name, security_data *hash, security_data *sign);
 int auth_verify_rsa_signature(security_rsa_mode mode, const char *key_name, security_data *hash, security_data *sign);
-int auth_get_ecdsa_signature(security_ecdsa_curve curve, const char *key_name, security_data *hash, security_data *sign);
-int auth_verify_ecdsa_signature(security_ecdsa_curve curve, const char *key_name, security_data *hash, security_data *sign);
-int auth_get_hash(security_algorithm algo, security_data *data, security_data *hash);
+int auth_get_ecdsa_signature(security_ecdsa_mode mode, const char *key_name, security_data *hash, security_data *sign);
+int auth_verify_ecdsa_signature(security_ecdsa_mode mode, const char *key_name, security_data *hash, security_data *sign);
+int auth_get_hash(security_hash_type algo, security_data *data, security_data *hash);
 int auth_get_hmac(security_algorithm algo, const char *key_name, security_data *data, security_data *hmac);
-int auth_generate_dhparams(security_data *params, security_data *pub);
-int auth_set_dhparams(security_data *params, security_data *pub);
-int auth_compute_dhparams(security_data *pub, security_data *secret);
-int auth_generate_ecdhkey(security_algorithm algo, security_data *pub);
-int auth_compute_ecdhkey(security_data *pub, security_data *secret);
+int auth_generate_dhparams(security_dh_data *params, security_data *pub);
+int auth_set_dhparams(security_dh_data *params, security_data *pub);
+int auth_compute_dhparams(security_dh_data *params, security_data *secret);
+int auth_generate_ecdhkey(security_ecdh_data *params, security_data *pub);
+int auth_compute_ecdhkey(security_ecdh_data *params, security_data *secret);
 
 /**
  * Crypto
  */
-int crypto_aes_encryption(security_aes_mode mode, const char *key_name, security_data *iv, security_data *input, security_data *output);
-int crypto_aes_decryption(security_aes_mode mode, const char *key_name, security_data *iv, security_data *input, security_data *output);
+int crypto_aes_encryption(security_aes_param mode, const char *key_name, security_data *input, security_data *output);
+int crypto_aes_decryption(security_aes_param mode, const char *key_name, security_data *input, security_data *output);
 int crypto_rsa_encryption(security_rsa_mode mode, const char *key_name, security_data *input, security_data *output);
 int crypto_rsa_decryption(security_rsa_mode mode, const char *key_name, security_data *input, security_data *output);
 
@@ -173,7 +208,7 @@ int ss_get_list_secure_storage(unsigned int *count, security_storage_list *list)
  */
 int keymgr_generate_key(security_algorithm algo, const char *key_name);
 int keymgr_set_key(security_algorithm algo, const char *key_name, security_data *pubkey, security_data *prikey);
-int keymgr_get_key(security_algorithm *algo, const char *key_name, security_data *pubkey);
+int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey);
 int keymgr_remove_key(security_algorithm algo, const char *key_name);
 
 #endif // __SECURITY_API_H__

@@ -6,6 +6,7 @@
 config EXAMPLES_SECURITY_API_TEST
 	bool "Security API Test program"
 	default n
+	depends on SECURITY_API && SECURITY_LINK && CONFIG_SE 
 	select STRESS_TOOL
 	---help---
 		Enable Security API Test

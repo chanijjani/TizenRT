@@ -74,7 +74,12 @@ test_crypto(void)
 
     printf("  . SEE AES Encryption ...\n");
     fflush(stdout);
-    if (0 != crypto_aes_encryption(AES_ECB_NOPAD, AES128_KEY, &iv, &input, &aes_enc_data)) {
+	security_aes_param param;
+	param.mode = AES_ECB_NOPAD;
+	param.iv = iv.data;
+	param.iv_len = iv.length;
+
+    if (0 != crypto_aes_encryption(param, AES128_KEY, &input, &aes_enc_data)) {
         printf("Fail\n  ! crypto_aes_encryption\n");
         goto exit;
     }
@@ -84,7 +89,7 @@ test_crypto(void)
 
     printf("  . SEE AES Decryption ...\n");
     fflush(stdout);
-    if (0 != crypto_aes_decryption(AES_ECB_NOPAD, AES128_KEY, &iv, &aes_enc_data, &aes_dec_data )) {
+    if (0 != crypto_aes_decryption(param, AES128_KEY, &aes_enc_data, &aes_dec_data )) {
         printf("Fail\n  ! security_aes_decryption\n");
         goto exit;
     }
@@ -110,7 +115,13 @@ test_crypto(void)
 
     printf("  . SEE RSA Encryption ...\n");
     fflush(stdout);
-    if (0 != crypto_rsa_encryption(RSAES_PKCS1_V1_5, RSA1024_KEY, &input, &rsa_enc_data)) {
+	security_rsa_mode mode;
+	mode.rsa_a = RSASSA_PKCS1_V1_5;
+	mode.hash_t = HASH_SHA256;
+	mode.mgf = 0;
+	mode.salt_byte_len = 0;
+
+    if (0 != crypto_rsa_encryption(mode, RSA1024_KEY, &input, &rsa_enc_data)) {
         printf("Fail\n  ! crypto_rsa_encryption\n");
         goto exit;
     }
@@ -120,7 +131,7 @@ test_crypto(void)
 
     printf("  . SEE RSA Decryption ...\n");
     fflush(stdout);
-    if (0 != crypto_rsa_decryption(RSAES_PKCS1_V1_5, RSA1024_KEY, &rsa_enc_data, &rsa_dec_data )) {
+    if (0 != crypto_rsa_decryption(mode, RSA1024_KEY, &rsa_enc_data, &rsa_dec_data )) {
         printf("Fail\n  ! crypto_rsa_decryption\n");
         goto exit;
     }

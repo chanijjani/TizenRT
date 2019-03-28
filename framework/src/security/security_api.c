@@ -65,42 +65,45 @@ sl_ctx g_slink_hnd = NULL;
  * Private
  */
 
-int sec_hal_algo_tbl[] = {
+int sec_key_tb[] = {
+	/*  AES */
 	HAL_KEY_AES_128,// 128 bits aes algorithm
 	HAL_KEY_AES_192, // 192 bits aes algorithm
 	HAL_KEY_AES_256, // 256 bits aes algorithm
+	/*  RSA */
 	HAL_KEY_RSA_1024, // 1024 bits rsa algorithm
 	HAL_KEY_RSA_2048, // 2048 bits rsa algorithm
 	HAL_KEY_RSA_3072, // 3072 bits rsa algorithm
 	HAL_KEY_RSA_4096,
+	/*  ECC: it doesn't support whole algorithm that mbedTLS support. it's have to be added*/
 	HAL_KEY_ECC_BRAINPOOL_P256R1, // ecc brainpool curve for p256r1
 	HAL_KEY_ECC_BRAINPOOL_P384R1, // ecc brainpool curve for p384r1
 	HAL_KEY_ECC_BRAINPOOL_P512R1, // ecc brainpool curve for p512r1
+	HAL_KEY_ECC_SEC_P192R1, // nist curve for p192r1
+	HAL_KEY_ECC_SEC_P224R1, // nist curve for p224r1
 	HAL_KEY_ECC_SEC_P256R1, // nist curve for p256r1
 	HAL_KEY_ECC_SEC_P384R1, // nist curve for p384r1
 	HAL_KEY_ECC_SEC_P512R1, // nist curve for p512r1
-	HAL_HASH_MD5,
-	HAL_HASH_SHA1,
-	HAL_HASH_SHA224,
-	HAL_HASH_SHA256,
-	HAL_HASH_SHA384,
-	HAL_HASH_SHA512,
+	/*  Hmac */
 	HAL_KEY_HMAC_MD5, // hmac with md5
 	HAL_KEY_HMAC_SHA1, // hmac with sha1
 	HAL_KEY_HMAC_SHA224, // hmac with sha224
 	HAL_KEY_HMAC_SHA256, // hmac with sha256
 	HAL_KEY_HMAC_SHA384, // hmac with sha384
 	HAL_KEY_HMAC_SHA512, // hmac with sha512
-	// DH?
+	/* DH */
+	HAL_KEY_DH_1024,
+	HAL_KEY_DH_2048,
+	HAL_KEY_DH_4096,
+	HAL_KEY_UNKNOWN,
 };
 
 hal_key_type _convert_algo_stoh(security_algorithm sec)
 {
-	return sec_hal_algo_tbl[sec];
+	return sec_key_tb[sec];
 }
 
-
-hal_hash_type _convert_hash_stoh(security_algorithm sec)
+hal_hash_type _convert_hash_stoh(security_hash_type sec)
 {
 	switch (sec) {
 	case HASH_MD5:
@@ -123,6 +126,8 @@ hal_hash_type _convert_hash_stoh(security_algorithm sec)
 
 hal_hmac_type _convert_hmac_stoh(security_algorithm sec) {
 	switch (sec) {
+	case HMAC_MD5:
+		return HAL_HMAC_MD5;
 	case HMAC_SHA1:
 		return HAL_HMAC_SHA1;
 	case HMAC_SHA224:
@@ -139,23 +144,60 @@ hal_hmac_type _convert_hmac_stoh(security_algorithm sec) {
 	return HAL_HMAC_UNKNOWN;
 }
 
-int sec_hal_aes_tbl[] = {
-	HAL_AES_ECB_NOPAD,
-	HAL_AES_ECB_ISO9797_M1,
-	HAL_AES_ECB_ISO9797_M2,
-	HAL_AES_ECB_PKCS5,
-	HAL_AES_ECB_PKCS7,
-	HAL_AES_CBC_NOPAD,
-	HAL_AES_CBC_ISO9797_M1,
-	HAL_AES_CBC_ISO9797_M2,
-	HAL_AES_CBC_PKCS5,
-	HAL_AES_CBC_PKCS7,
-	HAL_AES_CTR,
-};
-
-hal_aes_algo _convert_aes_stoh(security_aes_mode am)
+hal_aes_algo _convert_aes_stoh(security_aes_algo am)
 {
-	return sec_hal_aes_tbl[am];
+	switch (am) {
+	case AES_ECB_NOPAD:
+		return HAL_AES_ECB_NOPAD;
+	case AES_ECB_ISO9797_M1:
+		return AES_ECB_ISO9797_M1;
+	case AES_ECB_ISO9797_M2:
+		return HAL_AES_ECB_ISO9797_M2;
+	case AES_ECB_PKCS5:
+		return HAL_AES_ECB_PKCS5;
+	case AES_ECB_PKCS7:
+		return HAL_AES_ECB_PKCS7;
+	case AES_CBC_NOPAD:
+		return HAL_AES_CBC_NOPAD;
+	case AES_CBC_ISO9797_M1:
+		return HAL_AES_CBC_ISO9797_M1;
+	case AES_CBC_ISO9797_M2:
+		return HAL_AES_CBC_ISO9797_M1;
+	case AES_CBC_PKCS5:
+		return HAL_AES_CBC_PKCS5;
+	case AES_CBC_PKCS7:
+		return HAL_AES_CBC_PKCS7;
+	case AES_CTR:
+		return HAL_AES_CTR;
+	default:
+		return HAL_AES_UNKNOWN;
+	}
+	return HAL_AES_UNKNOWN;
+}
+
+hal_ecdsa_curve _convert_curve_stoh(security_ecdsa_curve curve)
+{
+	switch (curve) {
+	case ECDSA_BRAINPOOL_P256R1:
+		return HAL_ECDSA_BRAINPOOL_P256R1;
+	case ECDSA_BRAINPOOL_P384R1:
+		return HAL_ECDSA_BRAINPOOL_P384R1;
+	case ECDSA_BRAINPOOL_P512R1:
+		return HAL_ECDSA_BRAINPOOL_P512R1;
+	case ECDSA_SEC_P192R1:
+		return HAL_ECDSA_SEC_P192R1;
+	case ECDSA_SEC_P224R1:
+		return HAL_ECDSA_SEC_P224R1;
+	case ECDSA_SEC_P256R1:
+		return HAL_ECDSA_SEC_P256R1;
+	case ECDSA_SEC_P384R1:
+		return HAL_ECDSA_SEC_P384R1;
+	case ECDSA_SEC_P521R1:
+		return HAL_ECDSA_SEC_P512R1;
+	default: 
+		return HAL_ECDSA_UNKNOWN;
+	}
+	return HAL_ECDSA_UNKNOWN;
 }
 
 /* Convert path to slot index of SE */
@@ -168,21 +210,6 @@ int _convert_ptos(const char *path, uint32_t *slot)
 	// ToDo: check the stored location which is not SE.
 	return 0;
 }
-
-hal_ecdsa_curve sec_hal_curve_tbl[] = {
-	HAL_ECDSA_BRAINPOOL_P256R1,
-	HAL_ECDSA_BRAINPOOL_P384R1,
-	HAL_ECDSA_BRAINPOOL_P512R1,
-	HAL_ECDSA_SEC_P256R1,
-	HAL_ECDSA_SEC_P384R1,
-	HAL_ECDSA_SEC_P512R1,
-};
-
-hal_ecdsa_curve _convert_curve_stoh(security_ecdsa_curve curve)
-{
-	return sec_hal_curve_tbl[curve];
-}
-
 
 /**
  * Common
@@ -243,15 +270,15 @@ int keymgr_set_key(security_algorithm algo, const char *key_name, security_data 
 	}
 
 	// convert key
-	hal_data h_pubkey = {pubkey->data, pubkey->length};
-	hal_data h_prikey = {prikey->data, prikey->length};
+	hal_data h_pubkey = {pubkey->data, pubkey->length, NULL, 0};
+	hal_data h_prikey = {prikey->data, prikey->length, NULL, 0};
 
 	SECAPI_CALL(sl_set_key(g_slink_hnd, htype, key_idx, &h_pubkey, &h_prikey));
 
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int keymgr_get_key(security_algorithm *algo, const char *key_name, security_data *pubkey)
+int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey)
 {
 	SECAPI_ENTER;
 
@@ -260,7 +287,7 @@ int keymgr_get_key(security_algorithm *algo, const char *key_name, security_data
 	// it should be discussed later.
 
 	//convert key type
-	hal_key_type htype = HAL_KEY_UNKNOWN;
+	hal_key_type htype = _convert_algo_stoh(algo);
 
 	// convert path
 	uint32_t key_idx = 0;
@@ -271,14 +298,14 @@ int keymgr_get_key(security_algorithm *algo, const char *key_name, security_data
 	}
 
 	// convert key
-	hal_data h_pubkey = {NULL, 0};
+	hal_data h_pubkey = {NULL, 0, NULL, 0};
 
 	SECAPI_CALL(sl_get_key(g_slink_hnd, htype, key_idx, &h_pubkey));
 
 	pubkey->data = h_pubkey.data;
 	pubkey->length = h_pubkey.data_len;
 
-	*algo = UNKNOWN_ALGO;
+	//*algo = ALGO_UNKNOWN;
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -306,14 +333,14 @@ int keymgr_remove_key(security_algorithm algo, const char *key_name)
 /**
  * Crypto
  */
-int crypto_aes_encryption(security_aes_mode mode, const char *key_name, security_data *iv, security_data *input, security_data *output)
+int crypto_aes_encryption(security_aes_param param, const char *key_name, security_data *input, security_data *output)
 {
 	SECAPI_ENTER;
 
-	hal_aes_param aparam;
-	aparam.mode = _convert_aes_stoh(mode);
-	aparam.iv = iv->data;
-	aparam.iv_len = iv->length;
+	hal_aes_param hparam;
+	hparam.mode = _convert_aes_stoh(param.mode);
+	hparam.iv = param.iv;
+	hparam.iv_len = param.iv_len;
 
 	// convert path
 	uint32_t key_idx = 0;
@@ -323,24 +350,24 @@ int crypto_aes_encryption(security_aes_mode mode, const char *key_name, security
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data dec = {input->data, input->length};
-	hal_data enc = {NULL, 0};
+	hal_data dec = {input->data, input->length, NULL, 0};
+	hal_data enc = {NULL, 0, NULL, 0};
 
-	SECAPI_CALL(sl_aes_encrypt(g_slink_hnd, &dec, &aparam, key_idx, &enc));
+	SECAPI_CALL(sl_aes_encrypt(g_slink_hnd, &dec, &hparam, key_idx, &enc));
 
 	SECAPI_H2SD(enc, output);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int crypto_aes_decryption(security_aes_mode mode, const char *key_name, security_data *iv, security_data *input, security_data *output)
+int crypto_aes_decryption(security_aes_param param, const char *key_name, security_data *input, security_data *output)
 {
 	SECAPI_ENTER;
 
-	hal_aes_param aparam;
-	aparam.mode = _convert_aes_stoh(mode);
-	aparam.iv = iv->data;
-	aparam.iv_len = iv->length;
+	hal_aes_param hparam;
+	hparam.mode = _convert_aes_stoh(param.mode);
+	hparam.iv = param.iv;
+	hparam.iv_len = param.iv_len;
 
 	// convert path
 	uint32_t key_idx = 0;
@@ -350,10 +377,10 @@ int crypto_aes_decryption(security_aes_mode mode, const char *key_name, security
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data enc = {input->data, input->length};
-	hal_data dec = {NULL, 0};
+	hal_data enc = {input->data, input->length, NULL, 0};
+	hal_data dec = {NULL, 0, NULL, 0};
 
-	SECAPI_CALL(sl_aes_decrypt(g_slink_hnd, &enc, &aparam, key_idx, &dec));
+	SECAPI_CALL(sl_aes_decrypt(g_slink_hnd, &enc, &hparam, key_idx, &dec));
 
 	SECAPI_H2SD(dec, output);
 
@@ -363,7 +390,12 @@ int crypto_aes_decryption(security_aes_mode mode, const char *key_name, security
 int crypto_rsa_encryption(security_rsa_mode mode, const char *key_name, security_data *input, security_data *output)
 {
 	SECAPI_ENTER;
-	// ToDo: how to handle rsa_mode. I don't know why the value is required even though HAL doesn't need it.
+
+	hal_rsa_mode hmode;
+	hmode.rsa_a = mode.rsa_a;
+	hmode.hash_t = mode.hash_t;
+	hmode.mgf = mode.mgf;
+	hmode.salt_byte_len = mode.salt_byte_len;
 
     /* convert path */
 	uint32_t key_idx = 0;
@@ -373,10 +405,10 @@ int crypto_rsa_encryption(security_rsa_mode mode, const char *key_name, security
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data plain = {input->data, input->length};
-	hal_data enc = {NULL, 0};
+	hal_data dec = {input->data, input->length, NULL, 0};
+	hal_data enc = {NULL, 0, NULL, 0};
 
-	SECAPI_CALL(sl_rsa_encrypt(g_slink_hnd, &plain, key_idx, &enc));
+	SECAPI_CALL(sl_rsa_encrypt(g_slink_hnd, &dec, &hmode, key_idx, &enc));
 
 	SECAPI_H2SD(enc, output);
 
@@ -387,6 +419,12 @@ int crypto_rsa_decryption(security_rsa_mode mode, const char *key_name, security
 {
 	SECAPI_ENTER;
 
+	hal_rsa_mode hmode;
+	hmode.rsa_a = mode.rsa_a;
+	hmode.hash_t = mode.hash_t;
+	hmode.mgf = mode.mgf;
+	hmode.salt_byte_len = mode.salt_byte_len;
+
 	/* convert path */
 	uint32_t key_idx = 0;
 	int32_t res = _convert_ptos(key_name, &key_idx);
@@ -395,10 +433,10 @@ int crypto_rsa_decryption(security_rsa_mode mode, const char *key_name, security
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data enc = {input->data, input->length};
-	hal_data dec = {NULL, 0};
+	hal_data enc = {input->data, input->length, NULL, 0};
+	hal_data dec = {NULL, 0, NULL, 0};
 
-	SECAPI_CALL(sl_rsa_decrypt(g_slink_hnd, &enc, key_idx, &dec));
+	SECAPI_CALL(sl_rsa_decrypt(g_slink_hnd, &enc, &hmode, key_idx, &dec));
 
 	SECAPI_H2SD(dec, output);
 
@@ -425,7 +463,7 @@ int ss_read_secure_storage(const char *ss_name, unsigned int offset, security_da
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data ss = {NULL, 0};
+	hal_data ss = {NULL, 0, NULL, 0};
 
 	SECAPI_CALL(sl_read_storage(g_slink_hnd, ss_idx, &ss));
 
@@ -451,7 +489,7 @@ int ss_write_secure_storage(const char *ss_name, unsigned int offset, security_d
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data ss = {input->data, input->length};
+	hal_data ss = {input->data, input->length, NULL, 0};
 
 	SECAPI_CALL(sl_write_storage(g_slink_hnd, ss_idx, &ss));
 
@@ -503,7 +541,7 @@ int auth_generate_random(unsigned int size, security_data *random)
 {
 	SECAPI_ENTER;
 
-	hal_data hrand = {NULL, 0};
+	hal_data hrand = {NULL, 0, NULL, 0};
 	SECAPI_CALL(sl_generate_random(g_slink_hnd, size, &hrand));
 
 	SECAPI_H2SD(hrand, random);
@@ -537,7 +575,7 @@ int auth_get_certificate(const char *cert_name, security_data *cert)
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data cert_out = {NULL, 0};
+	hal_data cert_out = {NULL, 0, NULL, 0};
 	SECAPI_CALL(sl_get_certificate(g_slink_hnd, cert_idx, &cert_out));
 
 	SECAPI_H2SD(cert_out, cert);
@@ -566,12 +604,13 @@ int auth_verify_rsa_signature(security_rsa_mode mode, const char *key_name, secu
 	SECURITY_RETURN(SECURITY_NOT_SUPPORT);
 
 }
-int auth_get_ecdsa_signature(security_ecdsa_curve curve, const char *key_name, security_data *hash, security_data *sign)
+int auth_get_ecdsa_signature(security_ecdsa_mode mode, const char *key_name, security_data *hash, security_data *sign)
 {
 	SECAPI_ENTER;
 
-	hal_ecdsa_curve hc = _convert_curve_stoh(curve);
-	hal_ecdsa_mode mode = {hc, HAL_HASH_UNKNOWN};
+	hal_ecdsa_mode hmode;
+	hmode.curve = _convert_curve_stoh(mode.curve);
+	hmode.hash_t = mode.hash_t;
 
 	/* convert path */
 	uint32_t key_idx = 0;
@@ -581,22 +620,23 @@ int auth_get_ecdsa_signature(security_ecdsa_curve curve, const char *key_name, s
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data h_hash = {hash->data, hash->length};
-	hal_data h_sign = {NULL, 0};
+	hal_data h_hash = {hash->data, hash->length, NULL, 0};
+	hal_data h_sign = {NULL, 0, NULL, 0};
 
-	SECAPI_CALL(sl_ecdsa_sign_md(g_slink_hnd, mode, &h_hash, key_idx, &h_sign));
+	SECAPI_CALL(sl_ecdsa_sign_md(g_slink_hnd, hmode, &h_hash, key_idx, &h_sign));
 
 	SECAPI_H2SD(h_sign, sign);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int auth_verify_ecdsa_signature(security_ecdsa_curve curve, const char *key_name, security_data *hash, security_data *sign)
+int auth_verify_ecdsa_signature(security_ecdsa_mode mode, const char *key_name, security_data *hash, security_data *sign)
 {
 	SECAPI_ENTER;
 
-	hal_ecdsa_curve hc = _convert_curve_stoh(curve);
-	hal_ecdsa_mode mode = {hc, HAL_HASH_UNKNOWN};
+	hal_ecdsa_mode hmode;
+	hmode.curve = _convert_curve_stoh(mode.curve);
+	hmode.hash_t = mode.hash_t;
 
 	/* convert path */
 	uint32_t key_idx = 0;
@@ -606,15 +646,15 @@ int auth_verify_ecdsa_signature(security_ecdsa_curve curve, const char *key_name
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data h_hash = {hash->data, hash->length};
-	hal_data h_sign = {sign->data, sign->length};
+	hal_data h_hash = {hash->data, hash->length, NULL, 0};
+	hal_data h_sign = {sign->data, sign->length, NULL, 0};
 
-	SECAPI_CALL(sl_ecdsa_verify_md(g_slink_hnd, mode, &h_hash, &h_sign, key_idx));
+	SECAPI_CALL(sl_ecdsa_verify_md(g_slink_hnd, hmode, &h_hash, &h_sign, key_idx));
 
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int auth_get_hash(security_algorithm algo, security_data *data, security_data *hash)
+int auth_get_hash(security_hash_type algo, security_data *data, security_data *hash)
 {
 	SECAPI_ENTER;
 
@@ -623,8 +663,8 @@ int auth_get_hash(security_algorithm algo, security_data *data, security_data *h
 		SECURITY_RETURN(SECURITY_INVALID_INPUT_PARAMS);
 	}
 
-	hal_data input = {data->data, data->length};
-	hal_data output = {NULL, 0};
+	hal_data input = {data->data, data->length, NULL, 0};
+	hal_data output = {NULL, 0, NULL, 0};
 
 	SECAPI_CALL(sl_get_hash(g_slink_hnd, htype, &input, &output));
 
@@ -650,8 +690,8 @@ int auth_get_hmac(security_algorithm algo, const char *key_name, security_data *
 		SECURITY_RETURN(SECURITY_INVALID_KEY_INDEX);
 	}
 
-	hal_data input  = {data->data, data->length};
-	hal_data output = {NULL, 0};
+	hal_data input  = {data->data, data->length, NULL, 0};
+	hal_data output = {NULL, 0, NULL, 0};
 
 	SECAPI_CALL(sl_get_hmac(g_slink_hnd, htype, &input, key_idx, &output));
 
@@ -660,35 +700,35 @@ int auth_get_hmac(security_algorithm algo, const char *key_name, security_data *
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int auth_generate_dhparams(security_data *params, security_data *pub)
+int auth_generate_dhparams(security_dh_data *params, security_data *pub)
 {
 	SECAPI_ENTER;
 
 	SECURITY_RETURN(SECURITY_NOT_SUPPORT);
 }
 
-int auth_set_dhparams(security_data *params, security_data *pub)
+int auth_set_dhparams(security_dh_data *params, security_data *pub)
 {
 	SECAPI_ENTER;
 
 	SECURITY_RETURN(SECURITY_NOT_SUPPORT);
 }
 
-int auth_compute_dhparams(security_data *pub, security_data *secret)
+int auth_compute_dhparams(security_dh_data *params, security_data *secret)
 {
 	SECAPI_ENTER;
 
 	SECURITY_RETURN(SECURITY_NOT_SUPPORT);
 }
 
-int auth_generate_ecdhkey(security_algorithm algo, security_data *pub)
+int auth_generate_ecdhkey(security_ecdh_data *params, security_data *pub)
 {
 	SECAPI_ENTER;
 
 	SECURITY_RETURN(SECURITY_NOT_SUPPORT);
 }
 
-int auth_compute_ecdhkey(security_data *pub, security_data *secret)
+int auth_compute_ecdhkey(security_ecdh_data *params, security_data *secret)
 {
 	SECAPI_ENTER;
 

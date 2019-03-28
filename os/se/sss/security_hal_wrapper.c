@@ -1306,6 +1306,8 @@ int hal_ecdh_compute_shared_secret(hal_ecdh_data *ecdh_param, uint32_t key_idx, 
 		case HAL_ECDSA_SEC_P512R1:
 			ecc_pub.curve = OID_ECC_P521;
 			break;
+		case HAL_ECDSA_UNKNOWN:
+			return HAL_INVALID_ARGS;
 	}
 	ecc_pub.publickey_x = ecdh_param->pubkey_x->data;
 	ecc_pub.x_byte_len = ecdh_param->pubkey_x->data_len;

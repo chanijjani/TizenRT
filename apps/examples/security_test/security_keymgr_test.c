@@ -85,8 +85,8 @@ test_keymanager(void)
     printf("  . SEE Get Publickey ...\n");
     fflush(stdout);
 
-	security_algorithm key_type = UNKNOWN_ALGO;
-    if (0 != keymgr_get_key(&key_type, RSA1024_KEY, &get_key)) {
+	security_algorithm key_type = ALGO_UNKNOWN;
+    if (0 != keymgr_get_key(key_type, RSA1024_KEY, &get_key)) {
         printf("Fail\n  ! keymgr_get_pubkey\n");
         goto exit;
     }
