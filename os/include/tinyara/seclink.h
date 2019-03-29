@@ -4,9 +4,14 @@
 #include <stdint.h>
 #include <tinyara/security_hal.h>
 
+#define SECLINK_OK 0
+#define SECLINK_ERROR -1
+
 /*  common */
 #define SECLINK_HAL_INIT                         0x0001
 #define SECLINK_HAL_DEINIT                       0x0002
+#define SECLINK_MEM_MAX_SIZE                     4096
+#define SECLINK_MEM_PRIV_MAX_SIZE                256
 
 /*  Key manager */
 #define SECLINK_KEY                              0x0010
@@ -51,6 +56,11 @@
 
 struct _seclink_s_;
 typedef struct _seclink_s_ *sl_ctx;
+
+typedef struct _seclink_mempool_s {
+	void *mem;
+	void *mem_priv;
+} seclink_mem;
 
 struct seclink_init_param {
 	uint32_t i2c_port;
