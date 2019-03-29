@@ -56,6 +56,18 @@
 		sec->length = hal.data_len;				\
 	} while (0)
 
+#define SECAPI_H2SD_MEMCPY(hal, sec)\
+	do {\
+		memcpy(sec->data, hal.data, hal.data_len);  \
+		sec->length = hal.data_len;				    \
+	} while (0)
+
+#define SECAPI_H2SD_MEMCPY_PRIV(hal, sec)\
+	do {\
+		memcpy(sec->data, hal.priv, hal.priv_len);  \
+		sec->length = hal.priv_len;				    \
+	} while (0)
+
 #define SS_PATH "ss/"
 
 /*  Global */
@@ -232,6 +244,26 @@ int security_deinit(void)
 	SECURITY_RETURN(SECURITY_OK);
 }
 
+int security_free_data(security_data *data)
+{
+	if (data) {
+		if (data->data) {
+			free(data->data);
+		}
+		data->data = NULL;
+		data->length = 0;
+	}
+	return SECURITY_OK;
+}
+
+int security_get_status(int *status)
+{
+	//todo
+	*status = 0;
+
+	return SECURITY_OK;
+}
+
 /**
  * Key Manager
  */
@@ -278,7 +310,7 @@ int keymgr_set_key(security_algorithm algo, const char *key_name, security_data 
 	SECURITY_RETURN(SECURITY_OK);
 }
 
-int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey)
+int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey_x, security_data *pubkey_y)
 {
 	SECAPI_ENTER;
 
@@ -302,10 +334,20 @@ int keymgr_get_key(security_algorithm algo, const char *key_name, security_data 
 
 	SECAPI_CALL(sl_get_key(g_slink_hnd, htype, key_idx, &h_pubkey));
 
-	pubkey->data = h_pubkey.data;
-	pubkey->length = h_pubkey.data_len;
+	pubkey_x->data = (unsigned char *)malloc(h_pubkey.data_len);
+	if (!pubkey_x->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(h_pubkey, pubkey_x);
 
-	//*algo = ALGO_UNKNOWN;
+	//get pubkey_y for ECDH
+	if (h_pubkey.priv_len > 0) {
+		pubkey_y->data = (unsigned char *)malloc(h_pubkey.priv_len);
+		if (!pubkey_y->data) {
+			SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+		}
+		SECAPI_H2SD_MEMCPY_PRIV(h_pubkey, pubkey_y);
+	}
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -355,7 +397,11 @@ int crypto_aes_encryption(security_aes_param param, const char *key_name, securi
 
 	SECAPI_CALL(sl_aes_encrypt(g_slink_hnd, &dec, &hparam, key_idx, &enc));
 
-	SECAPI_H2SD(enc, output);
+	output->data = (unsigned char *)malloc(enc.data_len);
+	if (!output->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(enc, output);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -382,7 +428,11 @@ int crypto_aes_decryption(security_aes_param param, const char *key_name, securi
 
 	SECAPI_CALL(sl_aes_decrypt(g_slink_hnd, &enc, &hparam, key_idx, &dec));
 
-	SECAPI_H2SD(dec, output);
+	output->data = (unsigned char *)malloc(dec.data_len);
+	if (!output->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(dec, output);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -410,7 +460,11 @@ int crypto_rsa_encryption(security_rsa_mode mode, const char *key_name, security
 
 	SECAPI_CALL(sl_rsa_encrypt(g_slink_hnd, &dec, &hmode, key_idx, &enc));
 
-	SECAPI_H2SD(enc, output);
+	output->data = (unsigned char *)malloc(enc.data_len);
+	if (!output->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(enc, output);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -438,7 +492,11 @@ int crypto_rsa_decryption(security_rsa_mode mode, const char *key_name, security
 
 	SECAPI_CALL(sl_rsa_decrypt(g_slink_hnd, &enc, &hmode, key_idx, &dec));
 
-	SECAPI_H2SD(dec, output);
+	output->data = (unsigned char *)malloc(dec.data_len);
+	if (!output->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(dec, output);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -467,7 +525,11 @@ int ss_read_secure_storage(const char *ss_name, unsigned int offset, security_da
 
 	SECAPI_CALL(sl_read_storage(g_slink_hnd, ss_idx, &ss));
 
-	SECAPI_H2SD(ss, data);
+	data->data = (unsigned char *)malloc(ss.data_len);
+	if (!data->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(ss, data);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -544,7 +606,11 @@ int auth_generate_random(unsigned int size, security_data *random)
 	hal_data hrand = {NULL, 0, NULL, 0};
 	SECAPI_CALL(sl_generate_random(g_slink_hnd, size, &hrand));
 
-	SECAPI_H2SD(hrand, random);
+	random->data = (unsigned char *)malloc(hrand.data_len);
+	if (!random->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(hrand, random);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -578,7 +644,11 @@ int auth_get_certificate(const char *cert_name, security_data *cert)
 	hal_data cert_out = {NULL, 0, NULL, 0};
 	SECAPI_CALL(sl_get_certificate(g_slink_hnd, cert_idx, &cert_out));
 
-	SECAPI_H2SD(cert_out, cert);
+	cert->data = (unsigned char *)malloc(cert_out.data_len);
+	if (!cert->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(cert_out, cert);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -625,7 +695,11 @@ int auth_get_ecdsa_signature(security_ecdsa_mode mode, const char *key_name, sec
 
 	SECAPI_CALL(sl_ecdsa_sign_md(g_slink_hnd, hmode, &h_hash, key_idx, &h_sign));
 
-	SECAPI_H2SD(h_sign, sign);
+	sign->data = (unsigned char *)malloc(h_sign.data_len);
+	if (!sign->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(h_sign, sign);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -668,7 +742,11 @@ int auth_get_hash(security_hash_type algo, security_data *data, security_data *h
 
 	SECAPI_CALL(sl_get_hash(g_slink_hnd, htype, &input, &output));
 
-	SECAPI_H2SD(output, hash);
+	hash->data = (unsigned char *)malloc(output.data_len);
+	if (!hash->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(output, hash);
 
 	SECURITY_RETURN(SECURITY_OK);
 }
@@ -695,7 +773,11 @@ int auth_get_hmac(security_algorithm algo, const char *key_name, security_data *
 
 	SECAPI_CALL(sl_get_hmac(g_slink_hnd, htype, &input, key_idx, &output));
 
-	SECAPI_H2SD(output, hmac);
+	hmac->data = (unsigned char *)malloc(output.data_len);
+	if (!hmac->data) {
+		SECURITY_RETURN(SECURITY_ALLOC_ERROR);
+	}
+	SECAPI_H2SD_MEMCPY(output, hmac);
 
 	SECURITY_RETURN(SECURITY_OK);
 }

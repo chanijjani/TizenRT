@@ -164,11 +164,12 @@ typedef security_storage_file* security_storage_list;
  */
 int security_init(void);
 int security_deinit(void);
+int security_free_data(security_data *data);
+int security_get_status(int *status);
 
 /**
  * Authenticate
  */
-
 int auth_generate_random(unsigned int size, security_data *random);
 int auth_generate_certificate(const char *cert_name, security_csr *csr, security_data *cert);
 int auth_set_certificate(const char *cert_name, security_data *cert);
@@ -208,7 +209,7 @@ int ss_get_list_secure_storage(unsigned int *count, security_storage_list *list)
  */
 int keymgr_generate_key(security_algorithm algo, const char *key_name);
 int keymgr_set_key(security_algorithm algo, const char *key_name, security_data *pubkey, security_data *prikey);
-int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey);
+int keymgr_get_key(security_algorithm algo, const char *key_name, security_data *pubkey_x, security_data *pubkey_y);
 int keymgr_remove_key(security_algorithm algo, const char *key_name);
 
 #endif // __SECURITY_API_H__
