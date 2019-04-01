@@ -187,8 +187,8 @@ static void heapinfo_show_group(void)
 
 static void heapinfo_show_taskinfo(struct mm_heap_s *heap)
 {
-	int tcb_idx;
-	int heap_idx;
+//	int tcb_idx;
+//	int heap_idx;
 #if !defined(CONFIG_FS_AUTOMOUNT_PROCFS)
 	int ret;
 	bool is_mounted;

@@ -64,7 +64,7 @@
 typedef unsigned char u8_t;
 
 /** 255.255.255.255 */
-#define IPADDR_NONE         ((unsigned int)0xffffffffUL)
+//#define IPADDR_NONE         ((unsigned int)0xffffffffUL)
 
 #define in_range(c, lo, up)  ((u8_t)c >= lo && (u8_t)c <= up)
 #define isdigit(c)           in_range(c, '0', '9')
@@ -88,7 +88,7 @@ in_addr_t inet_addr(FAR const char *cp)
 	uint32_t result;
 
 	if (!isdigit((char)*cp)) {
-		return (IPADDR_NONE);
+		return ((unsigned int)0xffffffffUL);
 	}
 
 	sscanf(cp, "%u.%u.%u.%u", &a, &b, &c, &d);
