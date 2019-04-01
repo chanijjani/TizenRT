@@ -72,18 +72,8 @@ typedef enum {
 	HAL_DH_1024,
 	HAL_DH_2048,
 	HAL_DH_4096,
+	HAL_DH_UNKNOWN,
 } hal_dh_key_type;
-
-typedef enum{
-	HAL_RSA_1024,
-	HAL_RSA_2048,
-} hal_rsa_key_type;
-
-typedef enum {
-	HAL_AES_128,
-	HAL_AES_192,
-	HAL_AES_256,
-} hal_aes_key_type;
 
 typedef enum {
 	HAL_HMAC_MD5,
@@ -104,6 +94,7 @@ typedef enum {
 	HAL_ECDSA_SEC_P256R1,
 	HAL_ECDSA_SEC_P384R1,
 	HAL_ECDSA_SEC_P512R1,
+	HAL_ECDSA_UNKNOWN,
 } hal_ecdsa_curve;
 
 typedef enum {
@@ -118,11 +109,13 @@ typedef enum {
 	HAL_AES_CBC_PKCS5,
 	HAL_AES_CBC_PKCS7,
 	HAL_AES_CTR,
+	HAL_AES_UNKNOWN,
 } hal_aes_algo;
 
 typedef enum {
 	HAL_RSASSA_PKCS1_V1_5,
 	HAL_RSASSA_PKCS1_PSS_MGF1,
+	HAL_RSASSA_UNKNOWN,
 } hal_rsa_algo;
 
 typedef enum {
@@ -155,6 +148,7 @@ typedef enum {
 	HAL_KEY_DH_1024,
 	HAL_KEY_DH_2048,
 	HAL_KEY_DH_4096,
+
 	HAL_KEY_UNKNOWN,
 } hal_key_type;
 
@@ -275,7 +269,7 @@ int hal_set_key(_IN_ hal_key_type mode, _IN_ uint32_t key_idx, _IN_ hal_data *ke
  * Artik SEE API: int see_get_pubkey(see_algorithm algo, const char *key_name, see_data *pub_key);
  * TizenRT SEE API: 
  * ISP:
- * NOTE: Return key type in key->priv
+ * NOTE: Return pubkey_X to key->data and pubkey_Y to key->priv for ECC
  */
 int hal_get_key(_IN_ hal_key_type mode, _IN_ uint32_t key_idx, _OUT_ hal_data *key);
 
@@ -376,7 +370,7 @@ int hal_ecdsa_verify_md(_IN_ hal_ecdsa_mode mode, _IN_ hal_data *hash, _IN_ hal_
  * ISP: int isp_dh_generate_keypair_userparam_securestorage(struct sDH_PARAM *i_dh_param, unsigned int dh_param_index);
  */
 /*
- * The function generates GX (G^X mod P) which is pubkey in dh_param with given G, P
+ * The function generates GX (G^X mod P) which is pubkey in dh_param with given input G, P
  * X will be generate and will be protected inside slot in SE
  * X have to be removed by using hal_remove_key()
  */

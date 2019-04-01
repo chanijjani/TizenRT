@@ -37,8 +37,11 @@
 static int mbedtls_generate_random_alt( unsigned char *data, unsigned int len )
 {
 	int ret;
+	unsigned char random_data[MBEDTLS_MAX_BUF_SIZE_ALT];
 
-	static hal_data random;
+	hal_data random = {0, };
+	random.data = random_data;
+	random.data_len = MBEDTLS_MAX_BUF_SIZE_ALT;
 
 	ret = hal_generate_random(len, &random);
 
@@ -46,7 +49,6 @@ static int mbedtls_generate_random_alt( unsigned char *data, unsigned int len )
 		return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
 	}
 	memcpy(data, random.data, random.data_len);
-	hal_free_data(&random);
 
 	return HAL_SUCCESS;
 }

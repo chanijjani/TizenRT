@@ -4,9 +4,14 @@
 #include <stdint.h>
 #include <tinyara/security_hal.h>
 
+#define SECLINK_OK 0
+#define SECLINK_ERROR -1
+
 /*  common */
 #define SECLINK_HAL_INIT                         0x0001
 #define SECLINK_HAL_DEINIT                       0x0002
+#define SECLINK_MEM_MAX_SIZE                     4096
+#define SECLINK_MEM_PRIV_MAX_SIZE                256
 
 /*  Key manager */
 #define SECLINK_KEY                              0x0010
@@ -52,6 +57,11 @@
 struct _seclink_s_;
 typedef struct _seclink_s_ *sl_ctx;
 
+typedef struct _seclink_mempool_s {
+	void *mem;
+	void *mem_priv;
+} seclink_mem;
+
 struct seclink_init_param {
 	uint32_t i2c_port;
 	uint32_t gpio;
@@ -86,6 +96,7 @@ struct seclink_crypto_info {
 	hal_data *input;
 	hal_data *output;
 	hal_aes_param *aes_param;
+	hal_rsa_mode *rsa_mode;
 };
 
 struct seclink_ss_info {
@@ -161,9 +172,9 @@ int sl_aes_encrypt(sl_ctx hnd, hal_data *dec_data, hal_aes_param *aes_param, uin
 
 int sl_aes_decrypt(sl_ctx hnd, hal_data *enc_data, hal_aes_param *aes_param, uint32_t key_idx, _OUT_ hal_data *dec_data);
 
-int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, uint32_t key_idx, _OUT_ hal_data *enc_data);
+int sl_rsa_encrypt(sl_ctx hnd, hal_data *dec_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *enc_data);
 
-int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, uint32_t key_idx, _OUT_ hal_data *dec_data);
+int sl_rsa_decrypt(sl_ctx hnd, hal_data *enc_data, hal_rsa_mode *rsa_mode, uint32_t key_idx, _OUT_ hal_data *dec_data);
 
 
 /*  Secure Storage */

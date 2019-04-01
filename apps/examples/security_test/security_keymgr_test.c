@@ -39,7 +39,8 @@ test_keymanager(void)
 	security_data hash_gen_key;
     security_data aes_gen_key;
     security_data rsa_gen_key;
-    security_data get_key;
+    security_data get_x_key;
+    security_data get_y_key;
     security_data aes_set_key;
 
     aes_set_key.data = "1234567890123456";
@@ -85,13 +86,13 @@ test_keymanager(void)
     printf("  . SEE Get Publickey ...\n");
     fflush(stdout);
 
-	security_algorithm key_type = UNKNOWN_ALGO;
-    if (0 != keymgr_get_key(&key_type, RSA1024_KEY, &get_key)) {
+	security_algorithm key_type = RSA_1024;
+    if (0 != keymgr_get_key(key_type, RSA1024_KEY, &get_x_key, &get_y_key)) {
         printf("Fail\n  ! keymgr_get_pubkey\n");
         goto exit;
     }
     printf("ok\n");
-    PrintBuffer("RSA1024 Public key", get_key.data, get_key.length);
+    PrintBuffer("RSA1024 Public key", get_x_key.data, get_x_key.length);
 
     printf("  . SEE Set Key : AES128 ...\n");
     fflush(stdout);
@@ -142,7 +143,8 @@ exit:
 	free_security_data(&hash_gen_key);
 	free_security_data(&aes_gen_key);
 	free_security_data(&rsa_gen_key);
-	free_security_data(&get_key);
+	free_security_data(&get_x_key);
+	free_security_data(&get_y_key);
 
 	printf("  . See Deinitialize ...\n");
 	security_deinit();

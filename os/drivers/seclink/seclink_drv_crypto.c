@@ -42,8 +42,6 @@ int hd_handle_crypto_request(int cmd, unsigned long arg)
 		return -1;
 	}
 
-	printf("crypto request cmd(%x)\n", cmd);
-
 	switch(cmd) {
 	case SECLINK_HAL_AESENCRYPT:
 		req->res = hal_aes_encrypt(info->input, info->aes_param, info->key_idx, info->output);
@@ -52,10 +50,10 @@ int hd_handle_crypto_request(int cmd, unsigned long arg)
 		req->res = hal_aes_decrypt(info->input, info->aes_param, info->key_idx, info->output);
 		break;
 	case SECLINK_HAL_RSAENCRYPT:
-		req->res = hal_rsa_encrypt(info->input, info->key_idx, info->output);
+		req->res = hal_rsa_encrypt(info->input, info->rsa_mode, info->key_idx, info->output);
 		break;
 	case SECLINK_HAL_RSADECRYPT:
-		req->res = hal_rsa_decrypt(info->input, info->key_idx, info->output);
+		req->res = hal_rsa_decrypt(info->input, info->rsa_mode, info->key_idx, info->output);
 		break;
 	}
 

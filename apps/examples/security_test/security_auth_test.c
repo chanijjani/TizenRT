@@ -89,7 +89,11 @@ test_authenticate(void)
 	/*  does ecdsa require certificate to get signature? */
 	printf("  . SEE Get ECDSA Signature ...\n");
 	fflush(stdout);
-	if (0 != auth_get_ecdsa_signature(ECDSA_SEC_P256R1, ARTIK_CERT, &hashed, &sign)) {
+	security_ecdsa_mode mode;
+	mode.curve = ECDSA_SEC_P256R1;
+	mode.hash_t = HASH_SHA256;
+
+	if (0 != auth_get_ecdsa_signature(mode, ARTIK_CERT, &hashed, &sign)) {
 		printf("  fail\n  ! auth_get_ecdsa_signature\n");
 		goto exit;
 	}
@@ -99,7 +103,7 @@ test_authenticate(void)
 
 	printf("  . SEE Verify ECDSA Signature ...\n");
 	fflush(stdout);
-	if (0 != auth_verify_ecdsa_signature(ECDSA_SEC_P256R1, ARTIK_CERT, &hashed, &sign)) {
+	if (0 != auth_verify_ecdsa_signature(mode, ARTIK_CERT, &hashed, &sign)) {
 		printf("  fail\n  ! auth_verify_ecdsa_signature\n");
 		goto exit;
 	}
