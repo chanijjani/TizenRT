@@ -36,6 +36,7 @@ ARTIK05X_DIR_PATH=${CONFIGS_DIR_PATH}/artik05x
 SCRIPTS_PATH=${ARTIK05X_DIR_PATH}/scripts
 
 TIZENRT_BIN=${OUTPUT_BINARY_PATH}/tinyara_head.bin
+SMARTFS_BIN=${OUTPUT_BINARY_PATH}/artik05x_smartfs.bin
 
 OPENOCD_DIR_PATH=${BUILD_DIR_PATH}/tools/openocd
 if [[ $OSTYPE == "darwin"* ]]; then
@@ -61,7 +62,7 @@ USAGE: `basename $0` [OPTIONS]
 OPTIONS:
 	[--board[="<board-name>"]]
 	[--secure]
-	[ALL | ROMFS | BL1 | BL2 | SSSFW | WLANFW]
+	[ALL | ROMFS | BL1 | BL2 | SSSFW | WLANFW | USERFS]
 
 For examples:
 	`basename $0` --board=artik053 ALL
@@ -79,6 +80,7 @@ Options:
 	BL2                           write Secondary Bootloader image into FLASH
 	SSSFW                         write Secure Element Firmware image into FLASH
 	WLANFW                        write WiFi Firmware image into FLASH
+	USERFS                        write user FS to FLASH(SMARTFS)
 
 EOF
 }
@@ -99,6 +101,14 @@ is_file_present()
 	    return 0
 	fi
 	return 1
+}
+
+compute_ocd_commands_user()
+{
+	local commands=
+	ensure_file ${SMARTFS_BIN}
+	commands+="flash_write user ${SMARTFS_BIN} ${VERIFY}"
+	echo ${commands}
 }
 
 compute_ocd_commands()
@@ -158,8 +168,15 @@ download()
 	fi
 
 	# Make Openocd commands for parts
-	commands=$(compute_ocd_commands ${parts})
-	echo "ocd command to run: ${commands}"
+	if [[ "$parts" == "USER" ]] || [[ "$parts" == "user" ]]
+	then
+		commands=$(compute_ocd_commands_user)
+		echo "ocd command to run: ${commands}"
+	else
+	# Make Openocd commands for parts
+		commands=$(compute_ocd_commands ${parts})
+		echo "ocd command to run: ${commands}"
+	fi
 
 	# Generate Partition Map
 	${SCRIPTS_PATH}/partition_gen.sh
@@ -227,7 +244,7 @@ while test $# -gt 0; do
 		--verify)
 			VERIFY=verify
 			;;
-		ALL|OS|ROM|BL1|BL2|SSSFW|WLANFW|OTA|all|os|rom|bl1|bl2|sssfw|wlanfw|ota)
+		ALL|OS|ROM|BL1|BL2|SSSFW|WLANFW|OTA|USER|all|os|rom|bl1|bl2|sssfw|wlanfw|ota|user)
 			download $1
 			;;
 		ERASE_*)
