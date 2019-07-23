@@ -55,6 +55,7 @@
 #if CONFIG_NFILE_DESCRIPTORS > 0
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -64,6 +65,7 @@
 #include <sys/statfs.h>
 #include <sys/stat.h>
 #include <tinyara/fs/fs_utils.h>
+#include <tinyara/fs/nfs.h>
 #ifdef CONFIG_TASH
 #include <apps/shell/tash.h>
 #endif
@@ -105,6 +107,8 @@
 #define PROCFS_TYPE     "procfs"
 #define ROMFS_TYPE      "romfs"
 #define TMPFS_TYPE      "tmpfs"
+
+#define NFS_MOUNTPT		"/mnt/nfs"
 
 /****************************************************************************
  * Private Types
@@ -975,6 +979,113 @@ static int tash_umount(int argc, char **args)
 #endif
 #endif							/* END OF CONFIG_DISABLE_MOUNTPOINT */
 
+
+
+/****************************************************************************
+ * Name: cmd_nfsmount
+ ****************************************************************************/
+
+#if !defined(CONFIG_DISABLE_MOUNTPOINT) && defined(CONFIG_NET) && \
+    defined(CONFIG_NFS) && !defined(CONFIG_NSH_DISABLE_NFSMOUNT)
+int tash_nfsmount(int argc, char **argv) {
+	struct nfs_args data;
+	FAR char *address;
+	FAR char *lpath;
+	FAR char *rpath;
+	bool badarg = false;
+#ifdef CONFIG_NET_IPv6
+	FAR struct sockaddr_in6 *sin;
+	struct in6_addr inaddr;
+#else
+	FAR struct sockaddr_in *sin;
+	struct in_addr inaddr;
+#endif
+	int ret;
+
+	/* If a bad argument was encountered, then return without processing the
+	 * command.
+	 */
+
+	if (badarg) {
+		return ERROR;
+	}
+
+	/* The fist argument on the command line should be the NFS server IP address
+	 * in standard IPv4 (or IPv6) dot format.
+	 */
+
+	address = argv[1];
+	if (!address) {
+		return ERROR;
+	}
+
+	/* The local mount point path (lpath) might be relative to the current working
+	 * directory.
+	 */
+//	lpath = (char *) malloc(sizeof(char) * (strlen(NFS_MOUNTPT) + 1));
+//  lpath = nsh_gedtfullpath(vtbl, argv[2]);
+	lpath = argv[2];
+	if (!lpath) {
+		return ERROR;
+	}
+//	strncpy(lpath, NFS_MOUNTPT, strlen(NFS_MOUNTPT));
+//	lpath[strlen(NFS_MOUNTPT)] = '\0';
+
+	/* Get the remote mount point path */
+
+	rpath = argv[3];
+
+	/* Convert the IP address string into its binary form */
+
+#ifdef CONFIG_NET_IPv6
+	ret = inet_pton(AF_INET6, address, &inaddr);
+#else
+	ret = inet_pton(AF_INET, address, &inaddr);
+#endif
+	if (ret != 1) {
+//		nsh_freefullpath(lpath);
+		return ERROR;
+	}
+
+	/* Place all of the NFS arguements into the nfs_args structure */
+
+	memset(&data, 0, sizeof(data));
+
+#ifdef CONFIG_NET_IPv6
+	sin = (FAR struct sockaddr_in6 *)&data.addr;
+	sin->sin6_family = AF_INET6;
+	sin->sin6_port = htons(NFS_PMAPPORT);
+	memcpy(&sin->sin6_addr, &inaddr, sizeof(struct in6_addr));
+	data.addrlen = sizeof(struct sockaddr_in6);
+#else
+	sin = (FAR struct sockaddr_in *) &data.addr;
+	sin->sin_family = AF_INET;
+	sin->sin_port = htons(NFS_PMAPPORT);
+	sin->sin_addr = inaddr;
+	data.addrlen = sizeof(struct sockaddr_in);
+#endif
+
+	data.sotype = SOCK_DGRAM;
+	data.path = rpath;
+	data.flags = 0; /* 0=Use all defaults */
+
+	/* Perform the mount */
+	FSCMD_OUTPUT("Before NFS Mount, path = %s\n", lpath);
+	ret = mount(NULL, lpath, "nfs", 0, (FAR void *) &data);
+	if (ret < 0) {
+		FSCMD_OUTPUT("NFS Mount failed.. T-T)\n");
+//	  nsh_error(vtbl, g_fmtcmdfailed, argv[0], "mount", NSH_ERRNO);
+	}
+
+	/* We no longer need the allocated mount point path */
+
+//	nsh_freefullpath(lpath);
+	return ret;
+}
+#endif
+
+
+
 #ifndef CONFIG_DISABLE_ENVIRON
 /****************************************************************************
  * Name: tash_pwd
@@ -1293,6 +1404,9 @@ const static tash_cmdlist_t fs_utilcmds[] = {
 #endif
 #ifndef CONFIG_DISABLE_ENVIRON
 	{"umount",    tash_umount,    TASH_EXECMD_SYNC},
+#endif
+#ifndef CONFIG_DISABLE_ENVIRON
+	{"nfs_mount", tash_nfsmount,  TASH_EXECMD_SYNC},
 #endif
 #endif
 #ifndef CONFIG_DISABLE_ENVIRON

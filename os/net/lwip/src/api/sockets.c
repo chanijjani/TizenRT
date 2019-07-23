@@ -2500,11 +2500,13 @@ int lwip_setsockopt(int s, int level, int optname, const void *optval, socklen_t
 #endif							/* !LWIP_TCPIP_CORE_LOCKING */
 
 	if (!sock) {
+		fdbg("!sock  ~  lwip_setsockopt(%d, SOL_SOCKET, optname=0x%x, ..)\n", s, optname);
 		return -1;
 	}
 
 	if (NULL == optval) {
 		sock_set_errno(sock, EFAULT);
+		fdbg("NULL == optval  ~  lwip_setsockopt\n");
 		return -1;
 	}
 #if LWIP_TCPIP_CORE_LOCKING
@@ -2543,6 +2545,7 @@ int lwip_setsockopt(int s, int level, int optname, const void *optval, socklen_t
 	if (err != ERR_OK) {
 		LWIP_SETGETSOCKOPT_DATA_VAR_FREE(data);
 		sock_set_errno(sock, err_to_errno(err));
+		fdbg("tcpip_callback error\n");
 		return -1;
 	}
 	sys_arch_sem_wait((sys_sem_t *)(LWIP_SETGETSOCKOPT_DATA_VAR_REF(data).completed_sem), 0);
@@ -2553,6 +2556,7 @@ int lwip_setsockopt(int s, int level, int optname, const void *optval, socklen_t
 #endif							/* LWIP_TCPIP_CORE_LOCKING */
 
 	sock_set_errno(sock, err);
+	fdbg("err %d  ~  lwip_setsockopt\n", err);
 	return err ? -1 : 0;
 }
 

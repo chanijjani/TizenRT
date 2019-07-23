@@ -119,6 +119,7 @@ int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
 
 int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
+	fdbg("line %d, checkpoint\n", __LINE__);
 	return lwip_setsockopt(s, level, optname, optval, optlen);
 }
 

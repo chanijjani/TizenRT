@@ -150,6 +150,9 @@ extern const struct mountpt_operations procfs_operations;
 #ifdef CONFIG_FS_TMPFS
 extern const struct mountpt_operations tmpfs_operations;
 #endif
+#ifdef CONFIG_NFS
+extern const struct mountpt_operations nfs_operations;
+#endif
 
 static const struct fsmap_t g_nonbdfsmap[] = {
 #ifdef CONFIG_FS_PROCFS
@@ -158,6 +161,9 @@ static const struct fsmap_t g_nonbdfsmap[] = {
 
 #ifdef CONFIG_FS_TMPFS
 	{TMPFS_FSTYPE, &tmpfs_operations},
+#endif
+#ifdef CONFIG_NFS
+	{"nfs", &nfs_operations},
 #endif
 	{NULL, NULL},
 };
