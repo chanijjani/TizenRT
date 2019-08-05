@@ -152,6 +152,7 @@ int binary_manager_load_binary(int bin_idx)
 	load_attr_t load_attr;
 	char devname[BINMGR_DEVNAME_LEN];
 	binary_header_t header_data[PARTS_PER_BIN];
+	struct timeval load_end, load_start;
 
 	latest_ver = -1;
 	latest_idx = -1;
@@ -216,7 +217,11 @@ int binary_manager_load_binary(int bin_idx)
 			is_sched_locked = true;
 		}
 
+//		ret = load_binary(devname, &load_attr);
+		gettimeofday(&load_start, NULL);
 		ret = load_binary(devname, &load_attr);
+		gettimeofday(&load_end, NULL);
+		bmvdbg("\t\tBINARY LOADING Time: %ld.%ld - %ld.%ld)  ", load_end.tv_sec, load_end.tv_usec, load_start.tv_sec, load_start.tv_usec);
 		if (ret > 0) {
 			bin_pid = (pid_t)ret;
 			bmvdbg("Load '%s' success! pid = %d\n", devname, bin_pid);
