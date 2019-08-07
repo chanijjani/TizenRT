@@ -79,6 +79,9 @@ int load_binary(FAR const char *filename, load_attr_t *load_attr)
 	int pid;
 	int errcode;
 	int ret;
+	struct timeval load_start, load_end;
+	struct timeval exec_start, exec_end;
+	struct timeval exit_start, exit_end;
 
 	/* Sanity check */
 	if (load_attr->bin_size <= 0) {
@@ -125,13 +128,16 @@ int load_binary(FAR const char *filename, load_attr_t *load_attr)
 	bin->compression_type = load_attr->compression_type;
 
 	/* Load the module into memory */
-
+	gettimeofday(&load_start, NULL);
 	ret = load_module(bin);
 	if (ret < 0) {
 		errcode = -ret;
 		berr("ERROR: Failed to load program '%s': %d\n", filename, errcode);
 		goto errout_with_bin;
 	}
+	gettimeofday(&load_end, NULL);
+	printf("%s load_module() time = %ld.%ld - %ld.%ld  \n", filename,
+			load_end.tv_sec, load_end.tv_usec, load_start.tv_sec, load_start.tv_usec);
 
 	/* Disable pre-emption so that the executed module does
 	 * not return until we get a chance to connect the on_exit
@@ -156,12 +162,16 @@ int load_binary(FAR const char *filename, load_attr_t *load_attr)
 #endif
 
 	/* Then start the module */
+	gettimeofday(&exec_start, NULL);
 	pid = exec_module(bin);
 	if (pid < 0) {
 		errcode = -pid;
 		berr("ERROR: Failed to execute program '%s': %d\n", filename, errcode);
 		goto errout_with_lock;
 	}
+	gettimeofday(&exec_end, NULL);
+	printf("%s BIN exec_module() time = %ld.%ld - %ld.%ld  \n", filename,
+			exec_end.tv_sec, exec_end.tv_usec, exec_start.tv_sec, exec_start.tv_usec);
 
 #ifdef CONFIG_APP_BINARY_SEPARATION
 	tcb->ram_start = 0;
@@ -179,16 +189,23 @@ int load_binary(FAR const char *filename, load_attr_t *load_attr)
 	/* Set up to unload the module (and free the binary_s structure)
 	 * when the task exists.
 	 */
-
+	gettimeofday(&exit_start, NULL);
 	ret = group_exitinfo(pid, bin);
 	if (ret < 0) {
 		berr("ERROR: Failed to schedule unload '%s': %d\n", filename, ret);
 	}
+	gettimeofday(&exit_end, NULL);
+	printf("%s group_exitinfo() time = %ld.%ld - %ld.%ld  \n", filename,
+			exit_end.tv_sec, exit_end.tv_usec, exit_start.tv_sec, exit_start.tv_usec);
+
 #else
 	/* Free the binary_s structure here */
-
+	gettimeofday(&free_start, NULL);
 	binfmt_freeargv(bin);
 	kmm_free(bin);
+	gettimeofday(&free_end, NULL);
+	printf("%s BIN exec_module() time = %ld.%ld - %ld.%ld  \n", filename,
+			free_end.tv_sec, free_end.tv_usec, free_start.tv_sec, free_start.tv_usec);
 
 	/* TODO: How does the module get unloaded in this case? */
 #endif

@@ -166,15 +166,16 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 	FAR uint8_t **pptr;
 	int ret;
 	int i;
-
+	struct timeval elf_start, elf_end;
 	/* Read each section into memory that is marked SHF_ALLOC + SHT_NOBITS */
 
 	binfo("Loaded sections:\n");
 	text = (FAR uint8_t *)loadinfo->textalloc;
 	data = (FAR uint8_t *)loadinfo->dataalloc;
-
+	fdbg("\tehdr.eshnum = %d\n", loadinfo->ehdr.e_shnum);
 	for (i = 0; i < loadinfo->ehdr.e_shnum; i++) {
 		FAR Elf32_Shdr *shdr = &loadinfo->shdr[i];
+		gettimeofday(&elf_start, NULL);
 
 		/* SHF_ALLOC indicates that the section requires memory during
 		 * execution */
@@ -199,12 +200,12 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 
 		if (shdr->sh_type != SHT_NOBITS) {
 			/* Read the section data from sh_offset to the memory region */
-
 			ret = elf_read(loadinfo, *pptr, shdr->sh_size, shdr->sh_offset);
 			if (ret < 0) {
 				berr("ERROR: Failed to read section %d: %d\n", i, ret);
 				return ret;
 			}
+
 		}
 
 		/* If there is no data in an allocated section, then the allocated
@@ -224,8 +225,12 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 		/* Setup the memory pointer for the next time through the loop */
 
 		*pptr += ELF_ALIGNUP(shdr->sh_size);
-	}
 
+		gettimeofday(&elf_end, NULL);
+		printf("i = %d, sh_size %d ELF_READ time = %ld.%ld - %ld.%ld  \n", i, shdr->sh_size,
+				elf_end.tv_sec, elf_end.tv_usec, elf_start.tv_sec, elf_start.tv_usec);
+	}
+	fdbg("elf_loadfile() is finished\n");
 	return OK;
 }
 
@@ -253,6 +258,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 	int exidx;
 #endif
 	int ret;
+	struct timeval elf_start, elf_end;
 
 	binfo("loadinfo: %p\n", loadinfo);
 	DEBUGASSERT(loadinfo && loadinfo->filfd >= 0);
@@ -261,7 +267,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 
 	ret = elf_loadshdrs(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_loadshdrs failed: %d\n", ret);
+		fdbg("ERROR: elf_loadshdrs failed: %d\n", ret);
 		goto errout_with_buffers;
 	}
 
@@ -285,12 +291,16 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 #endif
 
 	/* Allocate (and zero) memory for the ELF file. */
-
+	gettimeofday(&elf_start, NULL);
 	ret = elf_addrenv_alloc(loadinfo, loadinfo->textsize, loadinfo->datasize, heapsize);
 	if (ret < 0) {
-		berr("ERROR: elf_addrenv_alloc() failed: %d\n", ret);
+		fdbg("ERROR: elf_addrenv_alloc() failed: %d\n", ret);
 		goto errout_with_buffers;
 	}
+	gettimeofday(&elf_end, NULL);
+	printf("Heap size %d MEMORY ALLOCATION time = %ld.%ld - %ld.%ld  \n", heapsize,
+			elf_end.tv_sec, elf_end.tv_usec, elf_start.tv_sec, elf_start.tv_usec);
+
 #ifdef CONFIG_ARCH_ADDRENV
 	/* If CONFIG_ARCH_ADDRENV=y, then the loaded ELF lies in a virtual address
 	 * space that may not be in place now.  elf_addrenv_select() will
@@ -299,7 +309,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 
 	ret = elf_addrenv_select(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_addrenv_select() failed: %d\n", ret);
+		fdbg("ERROR: elf_addrenv_select() failed: %d\n", ret);
 		goto errout_with_buffers;
 	}
 #ifdef CONFIG_BUILD_KERNEL
@@ -313,7 +323,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 
 	ret = elf_loadfile(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_loadfile failed: %d\n", ret);
+		fdbg("ERROR: elf_loadfile failed: %d\n", ret);
 		goto errout_with_addrenv;
 	}
 
@@ -322,13 +332,13 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 #ifdef CONFIG_BINFMT_CONSTRUCTORS
 	ret = elf_loadctors(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_loadctors failed: %d\n", ret);
+		fdbg("ERROR: elf_loadctors failed: %d\n", ret);
 		goto errout_with_addrenv;
 	}
 
 	ret = elf_loaddtors(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_loaddtors failed: %d\n", ret);
+		fdbg("ERROR: elf_loaddtors failed: %d\n", ret);
 		goto errout_with_addrenv;
 	}
 #endif
@@ -336,7 +346,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 #ifdef CONFIG_CXX_EXCEPTION
 	exidx = elf_findsection(loadinfo, CONFIG_ELF_EXIDX_SECTNAME);
 	if (exidx < 0) {
-		binfo("elf_findsection: Exception Index section not found: %d\n", exidx);
+		fdbg("elf_findsection: Exception Index section not found: %d\n", exidx);
 	} else {
 		up_init_exidx(loadinfo->shdr[exidx].sh_addr, loadinfo->shdr[exidx].sh_size);
 	}
@@ -347,7 +357,7 @@ int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 
 	ret = elf_addrenv_restore(loadinfo);
 	if (ret < 0) {
-		berr("ERROR: elf_addrenv_restore() failed: %d\n", ret);
+		fdbg("ERROR: elf_addrenv_restore() failed: %d\n", ret);
 		goto errout_with_buffers;
 	}
 #endif

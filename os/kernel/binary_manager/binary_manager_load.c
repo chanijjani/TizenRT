@@ -77,6 +77,12 @@ static int binary_manager_read_header(int bin_idx, int part_idx, binary_header_t
 	memset(header_data, 0, sizeof(binary_header_t));
 
 	snprintf(devname, BINMGR_DEVNAME_LEN, BINMGR_DEVNAME_FMT, BIN_PARTNUM(bin_idx, part_idx));
+	memset(devname, 0, sizeof(devname));
+	if (bin_idx == 1) {
+		memcpy(devname, "/mnt/wifi", sizeof(devname));
+	} else {
+		memcpy(devname, "/mnt/micom", sizeof(devname));
+	}
 	fd = open(devname, O_RDONLY);
 	if (fd < 0) {
 		bmdbg("Failed to open %s: %d, errno %d\n", devname, ret, errno);
@@ -152,6 +158,7 @@ int binary_manager_load_binary(int bin_idx)
 	load_attr_t load_attr;
 	char devname[BINMGR_DEVNAME_LEN];
 	binary_header_t header_data[PARTS_PER_BIN];
+	struct timeval load_start, load_end;
 
 	latest_ver = -1;
 	latest_idx = -1;
@@ -216,7 +223,17 @@ int binary_manager_load_binary(int bin_idx)
 			is_sched_locked = true;
 		}
 
-		ret = load_binary(devname, &load_attr);
+		gettimeofday(&load_start, NULL);
+//		ret = load_binary(devname, &load_attr);
+		if (bin_idx == 1) {
+			ret = load_binary("/mnt/wifi", &load_attr);
+		} else {
+			ret = load_binary("/mnt/micom", &load_attr);
+		}
+		gettimeofday(&load_end, NULL);
+		printf("%s BIN loading time = %ld.%ld - %ld.%ld  \n", bin_idx == 1 ? "/mnt/wifi" : "/mnt/micom",
+				load_end.tv_sec, load_end.tv_usec, load_start.tv_sec, load_start.tv_usec);
+
 		if (ret > 0) {
 			bin_pid = (pid_t)ret;
 			bmvdbg("Load '%s' success! pid = %d\n", devname, bin_pid);

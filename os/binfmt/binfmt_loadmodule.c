@@ -129,6 +129,7 @@ static int load_absmodule(FAR struct binary_s *bin)
 {
 	FAR struct binfmt_s *binfmt;
 	int ret = -ENOENT;
+	struct timeval dump_start, dump_end;
 
 	binfo("Loading %s\n", bin->filename);
 
@@ -155,7 +156,12 @@ static int load_absmodule(FAR struct binary_s *bin)
 			/* Save the unload method for use by unload_module */
 
 			bin->unload = binfmt->unload;
+			gettimeofday(&dump_start, NULL);
 			dump_module(bin);
+			gettimeofday(&dump_end, NULL);
+			printf("%s dump_module() time = %ld.%ld - %ld.%ld  \n", bin->filename,
+					dump_end.tv_sec, dump_end.tv_usec, dump_start.tv_sec, dump_start.tv_usec);
+
 			break;
 		}
 	}
