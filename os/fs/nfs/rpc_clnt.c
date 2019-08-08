@@ -366,7 +366,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	struct timeval tv;
 	uint16_t tport;
 	int errval;
-	int reuse = 1;
+//	int reuse = 1;
 	int error = 0;
 
 	fvdbg("Connecting\n");
@@ -402,12 +402,12 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	tv.tv_usec = 0;
 
 //	error = psock_setsockopt(rpc->rc_so, SOL_SOCKET, SO_RCVTIMEO, (const void *) &tv, sizeof(tv));
-	error = setsockopt(rpc->socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&reuse, sizeof(reuse));
-	if (error < 0) {
-		errval = -error;
-		fdbg("ERROR: psock_setsockopt failed: %d\n", errval);
-		goto bad;
-	}
+//	error = setsockopt(rpc->socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&reuse, sizeof(reuse));
+//	if (error < 0) {
+//		errval = -error;
+//		fdbg("ERROR: psock_setsockopt failed: %d\n", errval);
+//		goto bad;
+//	}
 
 	/* Some servers require that the client port be a reserved port
 	 * number. We always allocate a reserved port, as this prevents
@@ -416,7 +416,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = INADDR_ANY;
-	tport = 1024;
+	tport = 2050;
 
 	errval = 0;
 	do {
@@ -424,6 +424,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 		sin.sin_port = htons(tport);
 
 //		error = psock_bind(rpc->rc_so, (struct sockaddr *) &sin, sizeof(sin));
+		fdbg("line %d checkpoint\n", __LINE__);
 		error = bind(rpc->socket_fd, (struct sockaddr *) &sin, sizeof(sin));
 		if (error < 0) {
 			errval = -error;
@@ -440,7 +441,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	 * unconnected.  That would allow servers to reply from a port other than
 	 * the NFS_PORT.
 	 */
-
+	fdbg("line %d checkpoint\n", __LINE__);
 //	error = psock_connect(rpc->rc_so, saddr, sizeof(*saddr));
 	error = connect(rpc->socket_fd, saddr, sizeof(*saddr));
 	if (error < 0) {
@@ -452,7 +453,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	/* Do the RPC to get a dynamic bounding with the server using ppmap.
 	 * Get port number for MOUNTD.
 	 */
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	request.sdata.pmap.prog = txdr_unsigned(RPCPROG_MNT);
 	request.sdata.pmap.vers = txdr_unsigned(RPCMNT_VER3);
 	request.sdata.pmap.proc = txdr_unsigned(IPPROTO_UDP);
@@ -468,7 +469,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 
 	sa = (FAR struct sockaddr_in *) saddr;
 	sa->sin_port = htons(fxdr_unsigned(uint32_t, response.rdata.pmap.port));
-
+	fdbg("line %d checkpoint\n", __LINE__);
 //	error = psock_connect(rpc->rc_so, saddr, sizeof(*saddr));
 	error = connect(rpc->socket_fd, saddr, sizeof(*saddr));
 	if (error < 0) {
@@ -478,7 +479,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	}
 
 	/* Do RPC to mountd. */
-
+	fdbg("line %d checkpoint, server path = %s\n", __LINE__, rpc->rc_path);
 	strncpy(request.mountd.mount.rpath, rpc->rc_path, 90);
 	request.mountd.mount.len = txdr_unsigned(sizeof(request.mountd.mount.rpath));
 
@@ -489,7 +490,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 		fdbg("ERROR: rpcclnt_request failed: %d\n", error);
 		goto bad;
 	}
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	error = fxdr_unsigned(uint32_t, response.mdata.mount.status);
 	if (error != 0) {
 		fdbg("ERROR: Bad mount status: %d\n", error);
@@ -505,7 +506,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	 */
 
 	sa->sin_port = htons(PMAPPORT);
-
+	fdbg("line %d checkpoint\n", __LINE__);
 //	error = psock_connect(rpc->rc_so, saddr, sizeof(*saddr));
 	error = connect(rpc->socket_fd, saddr, sizeof(*saddr));
 	if (error < 0) {
@@ -528,7 +529,7 @@ int rpcclnt_connect(struct rpcclnt *rpc) {
 	}
 
 	sa->sin_port = htons(fxdr_unsigned(uint32_t, response.rdata.pmap.port));
-
+	fdbg("line %d checkpoint\n", __LINE__);
 //	error = psock_connect(rpc->rc_so, saddr, sizeof(*saddr));
 	error = connect(rpc->socket_fd, saddr, sizeof(*saddr));
 	if (error < 0) {
@@ -746,7 +747,7 @@ int rpcclnt_request(FAR struct rpcclnt *rpc, int procnum, int prog, int version,
 
 	tmp = fxdr_unsigned(uint32_t, replymsg->status);
 	if (tmp == RPC_SUCCESS) {
-		fvdbg("RPC_SUCCESS\n");
+		fdbg("\t\t\tRPC_SUCCESS!!!\n");
 	} else if (tmp == RPC_PROGMISMATCH) {
 		fdbg("ERROR: RPC_MSGACCEPTED: RPC_PROGMISMATCH error\n");
 		return EOPNOTSUPP;

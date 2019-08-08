@@ -721,7 +721,7 @@ int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 		sock_set_errno(sock, err_to_errno(ERR_VAL));
 		return -1;
 	}
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	/* check size, family and alignment of 'name' */
 	LWIP_ERROR("lwip_bind: invalid address", (IS_SOCK_ADDR_LEN_VALID(namelen) && IS_SOCK_ADDR_TYPE_VALID(name) && IS_SOCK_ADDR_ALIGNED(name)), sock_set_errno(sock, err_to_errno(ERR_ARG)); return -1;);
 	LWIP_UNUSED_ARG(namelen);
@@ -738,7 +738,7 @@ int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 		IP_SET_TYPE_VAL(local_addr, IPADDR_TYPE_V4);
 	}
 #endif							/* LWIP_IPV4 && LWIP_IPV6 */
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	err = netconn_bind(sock->conn, &local_addr, local_port);
 
 	if (err != ERR_OK) {
@@ -746,7 +746,7 @@ int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 		sock_set_errno(sock, err_to_errno(err));
 		return -1;
 	}
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_bind(%d) succeeded\n", s));
 	sock_set_errno(sock, 0);
 	return 0;
@@ -1071,12 +1071,12 @@ int lwip_send(int s, const void *data, size_t size, int flags)
 	size_t written;
 
 	LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_send(%d, data=%p, size=%" SZT_F ", flags=0x%x)\n", s, data, size, flags));
-
+	fdbg("line %d lwip_send(%d, data=%p, size=%" SZT_F ", flags=0x%x)\n", __LINE__, s, data, size, flags);
 	sock = get_socket(s);
 	if (!sock) {
 		return -1;
 	}
-
+	fdbg("line %d checkpoint\n", __LINE__);
 	if (NETCONNTYPE_GROUP(netconn_type(sock->conn)) != NETCONN_TCP) {
 #if (LWIP_UDP || LWIP_RAW)
 		return lwip_sendto(s, data, size, flags, NULL, 0);
@@ -1089,7 +1089,7 @@ int lwip_send(int s, const void *data, size_t size, int flags)
 	write_flags = NETCONN_COPY | ((flags & MSG_MORE) ? NETCONN_MORE : 0) | ((flags & MSG_DONTWAIT) ? NETCONN_DONTBLOCK : 0);
 	written = 0;
 	err = netconn_write_partly(sock->conn, data, size, write_flags, &written);
-
+	fdbg("line %d  lwip_send(%d) err=%d written=%" SZT_F "\n", __LINE__, s, err, written);
 	LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_send(%d) err=%d written=%" SZT_F "\n", s, err, written));
 	sock_set_errno(sock, err_to_errno(err));
 	return (err == ERR_OK ? (int)written : -1);
@@ -1253,7 +1253,7 @@ int lwip_sendto(int s, const void *data, size_t size, int flags, const struct so
 	u16_t short_size;
 	u16_t remote_port;
 	struct netbuf buf;
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	sock = get_socket(s);
 	if (!sock) {
 		return -1;
@@ -1268,7 +1268,7 @@ int lwip_sendto(int s, const void *data, size_t size, int flags, const struct so
 		return -1;
 #endif							/* LWIP_TCP */
 	}
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	/* @todo: split into multiple sendto's? */
 	LWIP_ASSERT("lwip_sendto: size must fit in u16_t", size <= 0xffff);
 	short_size = (u16_t) size;
@@ -1291,7 +1291,7 @@ int lwip_sendto(int s, const void *data, size_t size, int flags, const struct so
 	LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_sendto(%d, data=%p, short_size=%" U16_F ", flags=0x%x to=", s, data, short_size, flags));
 	ip_addr_debug_print(SOCKETS_DEBUG, &buf.addr);
 	LWIP_DEBUGF(SOCKETS_DEBUG, (" port=%" U16_F "\n", remote_port));
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	/* make the buffer point to the data that should be sent */
 #if LWIP_NETIF_TX_SINGLE_PBUF
 	/* Allocate a new netbuf and copy the data into it. */
@@ -1320,7 +1320,7 @@ int lwip_sendto(int s, const void *data, size_t size, int flags, const struct so
 			IP_SET_TYPE_VAL(buf.addr, IPADDR_TYPE_V4);
 		}
 #endif							/* LWIP_IPV4 && LWIP_IPV6 */
-
+		fdbg("\tline %d, checkpoint\n", __LINE__);
 		/* send the data */
 		err = netconn_send(sock->conn, &buf);
 	}

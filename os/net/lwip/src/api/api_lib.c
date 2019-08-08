@@ -104,9 +104,10 @@ static err_t netconn_apimsg(tcpip_callback_fn fn, struct api_msg *apimsg)
 #if LWIP_NETCONN_SEM_PER_THREAD
 	apimsg->op_completed_sem = LWIP_NETCONN_THREAD_SEM_GET();
 #endif							/* LWIP_NETCONN_SEM_PER_THREAD */
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	err = tcpip_send_msg_wait_sem(fn, apimsg, LWIP_API_MSG_SEM(apimsg));
 	if (err == ERR_OK) {
+		fdbg("\tline %d, checkpoint\n", __LINE__);
 		return apimsg->err;
 	}
 	return err;
@@ -688,7 +689,7 @@ err_t netconn_send(struct netconn *conn, struct netbuf *buf)
 	LWIP_ERROR("netconn_send: invalid conn", (conn != NULL), return ERR_ARG;);
 
 	LWIP_DEBUGF(API_LIB_DEBUG, ("netconn_send: sending %" U16_F " bytes\n", buf->p->tot_len));
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	API_MSG_VAR_ALLOC(msg);
 	API_MSG_VAR_REF(msg).conn = conn;
 	API_MSG_VAR_REF(msg).msg.b = buf;

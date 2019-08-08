@@ -142,17 +142,21 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 	if (tmp == mbox->front) {
 		LWIP_DEBUGF(SYS_DEBUG, ("Queue Full, Wait until gets free\n"));
 	}
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	while (tmp == mbox->front) {
 		mbox->wait_send++;
 		sys_sem_signal(&(mbox->mutex));
+		fdbg("\tline %d, checkpoint\n", __LINE__);
 		sys_arch_sem_wait(&(mbox->mail), 0);
+		fdbg("\tline %d, checkpoint\n", __LINE__);
 		status = sys_arch_sem_wait(&(mbox->mutex), 0);
+		fdbg("\tline %d, checkpoint\n", __LINE__);
 		mbox->wait_send--;
 		if (status == SYS_ARCH_CANCELED) {
 			return;
 		}
 	}
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	if (mbox->rear == mbox->front) {
 		first_msg = 1;
 	} else {
@@ -162,13 +166,14 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 	mbox->rear = tmp;
 	mbox->msgs[mbox->rear] = msg;
 	LWIP_DEBUGF(SYS_DEBUG, ("Post SUCCESS\n"));
+	fdbg("\tline %d, Post SUCCESS\n", __LINE__);
 
 	/* If msg was posted to an empty queue, Release semaphore for
 	   some fetch api blocked on this sem due to Empty queue. */
 	if (first_msg && mbox->wait_fetch) {
 		sys_sem_signal(&(mbox->mail));
 	}
-
+	fdbg("\tline %d, checkpoint\n", __LINE__);
 	sys_sem_signal(&(mbox->mutex));
 	return;
 }
