@@ -261,6 +261,7 @@ bootstrap
 
 case ${1,,} in
 #Download ALL option
+<<<<<<< HEAD
 all)
         for part in ${uniq_parts[@]}; do
                 if [[ "$part" == "userfs" ]];then
@@ -272,6 +273,25 @@ all)
                 flash_write ${offsets[$gidx]} ${OUTBIN_PATH}/${exe_name}
         done
         ;;
+=======
+ALL)
+	for part in ${uniq_parts[@]}; do
+		if [[ "$part" == "userfs" ]];then
+			continue
+		fi
+		if [[ "$part" == "coredump" ]];then
+			continue
+		fi
+		if [[ "$part" == "ramdump" ]];then
+			continue
+		fi
+		gidx=$(get_partition_index $part)
+		flash_erase ${offsets[$gidx]} ${sizes[$gidx]}
+		exe_name=$(get_executable_name ${parts[$gidx]})
+		flash_write ${offsets[$gidx]} ${OUTBIN_PATH}/${exe_name}
+	done
+	;;
+>>>>>>> dbd7b0fdd... build/configs/imxrt1050-evk, imxrt1020-evk: Create New paritions Need new paritions to store coredump and ramdump content.
 #Download ERASE <list of partitions>
 erase)
         while test $# -gt 1
