@@ -389,7 +389,7 @@ function BUILD()
 		fi
 	fi
 	echo "Docker Image Version : ${DOCKER_VERSION}"
-	docker run --rm ${DOCKER_OPT} -v ${TOPDIR}:/root/tizenrt -w /root/tizenrt/os tizenrt/tizenrt:${DOCKER_VERSION} ${BUILD_CMD} $1 2>&1 | tee build.log
+	docker run --privileged --rm ${DOCKER_OPT} -v ${TOPDIR}:/root/tizenrt -w /root/tizenrt/os tizenrt/tizenrt:${DOCKER_VERSION} ${BUILD_CMD} $1 2>&1 | tee build.log
 
 	UPDATE_STATUS
 }

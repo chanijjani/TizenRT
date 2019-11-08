@@ -62,6 +62,10 @@
 #include <debug.h>
 #include <errno.h>
 
+#include <sys/time.h>
+#include <tinyara/timer.h>
+#include <fcntl.h>
+
 #include <tinyara/arch.h>
 #include <tinyara/binfmt/binfmt.h>
 #include <tinyara/binfmt/elf.h>
@@ -234,6 +238,18 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	struct elf_loadinfo_s loadinfo;	/* Contains globals for libelf */
 	int ret;
 
+	struct timespec res_time;
+
+	struct timespec stime;
+	struct timespec etime;
+	struct timer_status_s before;
+	struct timer_status_s after;
+
+	int frt_fd = open("/dev/timer0", O_RDONLY);
+	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
+
+	ioctl(frt_fd, TCIOC_START, TRUE);
+
 	binfo("Loading file: %s\n", binp->filename);
 
 	/* Clear the load info structure */
@@ -245,6 +261,7 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	loadinfo.filelen = binp->filelen;
 	loadinfo.compression_type = binp->compression_type;
 
+	fdbg("\tFILE SIZE = %d\n", loadinfo.filelen);
 
 	ret = elf_init(binp->filename, &loadinfo);
 #ifdef CONFIG_APP_BINARY_SEPARATION
@@ -257,6 +274,8 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	}
 
 	/* Load the program binary */
+	clock_gettime(CLOCK_REALTIME, &stime);
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	ret = elf_load(&loadinfo);
 	elf_dumploadinfo(&loadinfo);
@@ -265,13 +284,43 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 		goto errout_with_init;
 	}
 
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+	clock_gettime(CLOCK_REALTIME, &etime);
+
+	fdbg("elf_load() Load time = %u\n", after.timeleft - before.timeleft);
+	if (etime.tv_nsec - stime.tv_nsec < 0) {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
+	}
+	else {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
+	}
+	fdbg("elf_load() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
+
 	/* Bind the program to the exported symbol table */
+	clock_gettime(CLOCK_REALTIME, &stime);
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	ret = elf_bind(&loadinfo, binp->exports, binp->nexports);
 	if (ret != 0) {
 		berr("Failed to bind symbols program binary: %d\n", ret);
 		goto errout_with_load;
 	}
+
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+	clock_gettime(CLOCK_REALTIME, &etime);
+
+	fdbg("elf_bind() Load time = %u\n", after.timeleft - before.timeleft);
+	if (etime.tv_nsec - stime.tv_nsec < 0) {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
+	}
+	else {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
+	}
+	fdbg("elf_bind() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 	/* Return the load information */
 

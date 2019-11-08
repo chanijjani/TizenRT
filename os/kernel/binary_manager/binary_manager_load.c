@@ -75,6 +75,12 @@ static int binary_manager_read_header(int bin_idx, int part_idx, binary_header_t
 	memset(header_data, 0, sizeof(binary_header_t));
 
 	snprintf(devname, BINMGR_DEVNAME_LEN, BINMGR_DEVNAME_FMT, BIN_PARTNUM(bin_idx, part_idx));
+
+	if (BIN_PARTNUM(bin_idx, part_idx) == 4) {
+		snprintf(devname, 10, "/mnt/wifi");
+		fdbg("Load %s\n", devname);
+	}
+
 	fd = open(devname, O_RDONLY);
 	if (fd < 0) {
 		bmdbg("Failed to open %s: %d, errno %d\n", devname, ret, errno);
@@ -226,6 +232,11 @@ int binary_manager_load_binary(int bin_idx)
 		load_attr.offset = CHECKSUM_SIZE + header_data[latest_idx].header_size;
 
 		bmvdbg("BIN[%d] %s %d %d\n", bin_idx, devname, load_attr.bin_size, load_attr.offset);
+
+		if (BIN_PARTNUM(bin_idx, latest_idx) == 4) {
+			snprintf(devname, 10, "/mnt/wifi");
+			fdbg("Load %s\n", devname);
+		}
 
 		retry_count = 0;
 		

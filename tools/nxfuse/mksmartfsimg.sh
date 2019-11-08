@@ -34,7 +34,7 @@ CONTENTSDIR=$BASE_DIR/tools/fs/contents-smartfs
 NXFUSEDIR=$NXFUSE_TOOL_PATH
 
 # For the below values check partition sizes in .config
-blkcount=512
+blkcount=2048
 blksize=$CONFIG_MTD_SMART_SECTOR_SIZE
 pagesize=256
 erasesize=4096

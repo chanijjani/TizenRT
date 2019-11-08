@@ -66,6 +66,10 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <sys/time.h>
+#include <tinyara/timer.h>
+#include <fcntl.h>
+
 #include <tinyara/arch.h>
 #include <tinyara/addrenv.h>
 #include <tinyara/mm/mm.h>
@@ -167,6 +171,16 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 	int ret;
 	int i;
 
+	struct timespec stime;
+	struct timespec etime;
+	struct timespec res_time;
+
+	struct timer_status_s before;
+	struct timer_status_s after;
+//	int frt_fd = open("/dev/timer0", O_RDONLY);
+//	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
+//	ioctl(frt_fd, TCIOC_START, TRUE);
+
 	/* Read each section into memory that is marked SHF_ALLOC + SHT_NOBITS */
 
 	binfo("Loaded sections:\n");
@@ -199,12 +213,28 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 
 		if (shdr->sh_type != SHT_NOBITS) {
 			/* Read the section data from sh_offset to the memory region */
+//			clock_gettime(CLOCK_REALTIME, &stime);
+//			ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 			ret = elf_read(loadinfo, *pptr, shdr->sh_size, shdr->sh_offset);
 			if (ret < 0) {
 				berr("ERROR: Failed to read section %d: %d\n", i, ret);
 				return ret;
 			}
+
+//			ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+//			clock_gettime(CLOCK_REALTIME, &etime);
+
+//			fdbg("Load time = %u\n", after.timeleft - before.timeleft);
+//			if (etime.tv_nsec - stime.tv_nsec < 0) {
+//				res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
+//				res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
+//			}
+//			else {
+//				res_time.tv_sec = etime.tv_sec - stime.tv_sec;
+//				res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
+//			}
+//			fdbg("Total elf_load() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 		}
 
 		/* If there is no data in an allocated section, then the allocated
@@ -225,6 +255,7 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 
 		*pptr += ELF_ALIGNUP(shdr->sh_size);
 	}
+//	ioctl(frt_fd, TCIOC_STOP, TRUE);
 
 	return OK;
 }

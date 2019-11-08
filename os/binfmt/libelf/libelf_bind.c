@@ -62,6 +62,10 @@
 #include <assert.h>
 #include <debug.h>
 
+#include <sys/time.h>
+#include <tinyara/timer.h>
+#include <fcntl.h>
+
 #include <tinyara/elf.h>
 #include <tinyara/binfmt/elf.h>
 #include <tinyara/binfmt/symtab.h>
@@ -184,6 +188,18 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 	int ret = OK;
 	int i;
 
+	struct timespec res_time;
+
+	struct timespec stime;
+	struct timespec etime;
+	struct timer_status_s before;
+	struct timer_status_s after;
+
+//	int frt_fd = open("/dev/timer0", O_RDONLY);
+//	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
+//
+//	ioctl(frt_fd, TCIOC_START, TRUE);
+
 	/* Read the relocation table into memory */
 	elf_readreltab(loadinfo, relsec);
 
@@ -191,8 +207,15 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 	 * containing the relations.  'dstsec' is the section containing the data
 	 * to be relocated.
 	 */
+//	clock_gettime(CLOCK_REALTIME, &stime);
+//	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	for (i = 0; i < relsec->sh_size / sizeof(Elf32_Rel); i++) {
+		struct timespec relo_stime;
+		struct timespec relo_etime;
+		struct timer_status_s relo_before;
+		struct timer_status_s relo_after;
+
 		psym = &sym;
 
 		/* Read the relocation entry into memory */
@@ -210,6 +233,9 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 		symidx = ELF32_R_SYM(rel.r_info);
 
 		/* Read the symbol table entry into memory */
+
+//		clock_gettime(CLOCK_REALTIME, &relo_stime);
+//		ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&relo_before);
 
 		ret = elf_readsym(loadinfo, symidx, &sym);
 		if (ret < 0) {
@@ -240,6 +266,20 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 			}
 		}
 
+//		ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&relo_after);
+//		clock_gettime(CLOCK_REALTIME, &relo_etime);
+//
+//		fdbg("Load time = %u\n", relo_after.timeleft - relo_before.timeleft);
+//		if (relo_etime.tv_nsec - relo_stime.tv_nsec < 0) {
+//			res_time.tv_sec = relo_etime.tv_sec - relo_stime.tv_sec - 1;
+//			res_time.tv_nsec = relo_etime.tv_nsec - relo_stime.tv_nsec + 1000000000;
+//		}
+//		else {
+//			res_time.tv_sec = relo_etime.tv_sec - relo_stime.tv_sec;
+//			res_time.tv_nsec = relo_etime.tv_nsec - relo_stime.tv_nsec;
+//		}
+//		fdbg("i = %d,  elf_symvalue() timediff -> (%lld.%09ld secs)\n", i, (long long)res_time.tv_sec, res_time.tv_nsec);
+
 		/* Calculate the relocation address. */
 
 		if (rel.r_offset > dstsec->sh_size - sizeof(uint32_t)) {
@@ -257,6 +297,21 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 			goto ret_err;
 		}
 	}
+
+//	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+//	ioctl(frt_fd, TCIOC_STOP, 0);
+//	clock_gettime(CLOCK_REALTIME, &etime);
+//
+//	fdbg("elf_relocate() Load time = %u\n", after.timeleft - before.timeleft);
+//	if (etime.tv_nsec - stime.tv_nsec < 0) {
+//		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
+//		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
+//	}
+//	else {
+//		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
+//		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
+//	}
+//	fdbg("elf_relocate() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 ret_err:
 	kmm_free(loadinfo->reltab);

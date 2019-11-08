@@ -69,6 +69,10 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <sys/time.h>
+#include <tinyara/timer.h>
+#include <fcntl.h>
+
 #include <tinyara/kmalloc.h>
 #include <tinyara/fs/fs.h>
 #include <tinyara/fs/dirent.h>
@@ -1043,6 +1047,19 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 	int ret;
 	off_t newpos;
 	off_t sectorstartpos;
+
+	struct timespec res_time;
+
+	struct timespec stime;
+	struct timespec etime;
+	struct timer_status_s before;
+	struct timer_status_s after;
+
+	int frt_fd = open("/dev/timer1", O_RDONLY);
+	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
+
+	ioctl(frt_fd, TCIOC_START, TRUE);
+
 #ifdef CONFIG_SMARTFS_DYNAMIC_HEADER
 	int sector_used = 0;
 #endif
@@ -1114,6 +1131,9 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 		sf->filepos = 0;
 	}
 
+	clock_gettime(CLOCK_REALTIME, &stime);
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
+
 	header = (struct smartfs_chain_header_s *)fs->fs_rwbuffer;
 	while ((sf->currsector != SMARTFS_ERASEDSTATE_16BIT) && (sf->filepos + fs->fs_llformat.availbytes - sizeof(struct smartfs_chain_header_s) < newpos)) {
 		/* Read the sector's header */
@@ -1139,6 +1159,20 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 #endif
 		sf->currsector = SMARTFS_NEXTSECTOR(header);
 	}
+
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+	clock_gettime(CLOCK_REALTIME, &etime);
+
+	fdbg("while + read time = %u\n", after.timeleft - before.timeleft);
+	if (etime.tv_nsec - stime.tv_nsec < 0) {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
+	}
+	else {
+		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
+		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
+	}
+	fdbg("while + read timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 #ifdef CONFIG_SMARTFS_USE_SECTOR_BUFFER
 
