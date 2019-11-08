@@ -69,7 +69,6 @@
 #include <tinyara/elf.h>
 #include <tinyara/binfmt/elf.h>
 #include <tinyara/binfmt/symtab.h>
-#include <tinyara/kmalloc.h>
 
 #include "libelf.h"
 
@@ -104,28 +103,6 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: elf_readreltab
- *
- * Description:
- *   Read the relocation table into memory.
- *
- ****************************************************************************/
-static inline void elf_readreltab(FAR struct elf_loadinfo_s *loadinfo, FAR const Elf32_Shdr *relsec)
-{
-	loadinfo->reltab = (uintptr_t)kmm_malloc(relsec->sh_size);
-
-	if (!loadinfo->reltab) {
-		berr("ERROR: Failed to allocate space for relocation table. Size = %u\n", relsec->sh_size);
-		return;
-	}
-
-	if (elf_read(loadinfo, (FAR uint8_t *)loadinfo->reltab, relsec->sh_size, relsec->sh_offset) < 0) {
-		berr("ERROR: Failed to read relocation table into memory\n");
-	}
-}
-
-
-/****************************************************************************
  * Name: elf_readrel
  *
  * Description:
@@ -144,24 +121,13 @@ static inline int elf_readrel(FAR struct elf_loadinfo_s *loadinfo, FAR const Elf
 		return -EINVAL;
 	}
 
-	if (loadinfo->reltab) {
-		/* Get the file offset to the symbol table entry */
+	/* Get the file offset to the symbol table entry */
 
-		offset = sizeof(Elf32_Rel) * index;
+	offset = relsec->sh_offset + sizeof(Elf32_Rel) * index;
 
-		/* And, finally, read the symbol table entry into memory */
+	/* And, finally, read the symbol table entry into memory */
 
-		memcpy(rel, loadinfo->reltab + offset, sizeof(Elf32_Rel));
-		return OK;
-	} else {
-		/* Get the file offset to the symbol table entry */
-
-		offset = relsec->sh_offset + sizeof(Elf32_Rel) * index;
-
-		/* And, finally, read the symbol table entry into memory */
-
-		return elf_read(loadinfo, (FAR uint8_t *)rel, sizeof(Elf32_Rel), offset);
-	}
+	return elf_read(loadinfo, (FAR uint8_t *)rel, sizeof(Elf32_Rel), offset);
 }
 
 /****************************************************************************
@@ -185,7 +151,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 	FAR Elf32_Sym *psym;
 	uintptr_t addr;
 	int symidx;
-	int ret = OK;
+	int ret;
 	int i;
 
 	struct timespec res_time;
@@ -223,7 +189,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 		ret = elf_readrel(loadinfo, relsec, i, &rel);
 		if (ret < 0) {
 			berr("Section %d reloc %d: Failed to read relocation entry: %d\n", relidx, i, ret);
-			goto ret_err;
+			return ret;
 		}
 
 		/* Get the symbol table index for the relocation.  This is contained
@@ -240,7 +206,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 		ret = elf_readsym(loadinfo, symidx, &sym);
 		if (ret < 0) {
 			berr("Section %d reloc %d: Failed to read symbol[%d]: %d\n", relidx, i, symidx, ret);
-			goto ret_err;
+			return ret;
 		}
 
 		/* Get the value of the symbol (in sym.st_value) */
@@ -262,7 +228,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 				psym = NULL;
 			} else {
 				berr("Section %d reloc %d: Failed to get value of symbol[%d]: %d\n", relidx, i, symidx, ret);
-				goto ret_err;
+				return ret;
 			}
 		}
 
@@ -284,7 +250,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 
 		if (rel.r_offset > dstsec->sh_size - sizeof(uint32_t)) {
 			berr("Section %d reloc %d: Relocation address out of range, offset %d size %d\n", relidx, i, rel.r_offset, dstsec->sh_size);
-			goto ret_err;
+			return -EINVAL;
 		}
 
 		addr = dstsec->sh_addr + rel.r_offset;
@@ -294,7 +260,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 		ret = up_relocate(&rel, psym, addr);
 		if (ret < 0) {
 			berr("ERROR: Section %d reloc %d: Relocation failed: %d\n", relidx, i, ret);
-			goto ret_err;
+			return ret;
 		}
 	}
 
@@ -356,9 +322,6 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 		return ret;
 	}
 
-	/* Read the symbol table into memory */
-	elf_readsymtab(loadinfo);
-
 	/* Allocate an I/O buffer.  This buffer is used by elf_symname() to
 	 * accumulate the variable length symbol name.
 	 */
@@ -366,7 +329,7 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 	ret = elf_allocbuffer(loadinfo);
 	if (ret < 0) {
 		berr("elf_allocbuffer failed: %d\n", ret);
-		goto ret_err;
+		return ret;
 	}
 #ifdef CONFIG_ARCH_ADDRENV
 	/* If CONFIG_ARCH_ADDRENV=y, then the loaded ELF lies in a virtual address
@@ -377,7 +340,7 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 	ret = elf_addrenv_select(loadinfo);
 	if (ret < 0) {
 		berr("ERROR: elf_addrenv_select() failed: %d\n", ret);
-		goto ret_err;
+		return ret;
 	}
 #endif
 
@@ -445,7 +408,5 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 
 #endif
 
-ret_err:
-	kmm_free(loadinfo->symtab);
 	return ret;
 }
