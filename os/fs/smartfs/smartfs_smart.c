@@ -1064,7 +1064,7 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 	int sector_used = 0;
 #endif
 	/* Test if this is a seek to get the current file pos */
-
+	fdbg(" offset = %d\n", offset);
 	if ((whence == SEEK_CUR) && (offset == 0)) {
 		return sf->filepos;
 	}
@@ -1131,7 +1131,6 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 		sf->filepos = 0;
 	}
 
-	clock_gettime(CLOCK_REALTIME, &stime);
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	header = (struct smartfs_chain_header_s *)fs->fs_rwbuffer;
@@ -1161,18 +1160,6 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 	}
 
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
-	clock_gettime(CLOCK_REALTIME, &etime);
-
-	fdbg("while + read time = %u\n", after.timeleft - before.timeleft);
-	if (etime.tv_nsec - stime.tv_nsec < 0) {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
-	}
-	else {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
-	}
-	fdbg("while + read timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 #ifdef CONFIG_SMARTFS_USE_SECTOR_BUFFER
 
@@ -1197,9 +1184,15 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 
 	sf->curroffset = sizeof(struct smartfs_chain_header_s) + newpos - sf->filepos;
 	sf->filepos = newpos;
+
+	fdbg("while + read time = %u - %u = %u,  ret = %d\n", after.timeleft, before.timeleft, after.timeleft - before.timeleft, newpos);
+	ioctl(frt_fd, TCIOC_STOP, TRUE);
+	close(frt_fd);
+
 	return newpos;
 
 errout:
+	fdbg("ERROR return = %d\n", ret);
 	return ret;
 }
 

@@ -267,39 +267,26 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 #ifdef CONFIG_APP_BINARY_SEPARATION
 	loadinfo.uheap = binp->uheap;
 #endif
-	elf_dumploadinfo(&loadinfo);
+//	elf_dumploadinfo(&loadinfo);
 	if (ret != 0) {
 		berr("Failed to initialize for load of ELF program: %d\n", ret);
 		goto errout;
 	}
 
 	/* Load the program binary */
-	clock_gettime(CLOCK_REALTIME, &stime);
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	ret = elf_load(&loadinfo);
-	elf_dumploadinfo(&loadinfo);
+//	elf_dumploadinfo(&loadinfo);
 	if (ret != 0) {
 		berr("Failed to load ELF program binary: %d\n", ret);
 		goto errout_with_init;
 	}
 
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
-	clock_gettime(CLOCK_REALTIME, &etime);
-
 	fdbg("elf_load() Load time = %u\n", after.timeleft - before.timeleft);
-	if (etime.tv_nsec - stime.tv_nsec < 0) {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
-	}
-	else {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
-	}
-	fdbg("elf_load() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 	/* Bind the program to the exported symbol table */
-	clock_gettime(CLOCK_REALTIME, &stime);
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	ret = elf_bind(&loadinfo, binp->exports, binp->nexports);
@@ -309,18 +296,7 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	}
 
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
-	clock_gettime(CLOCK_REALTIME, &etime);
-
 	fdbg("elf_bind() Load time = %u\n", after.timeleft - before.timeleft);
-	if (etime.tv_nsec - stime.tv_nsec < 0) {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec - 1;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec + 1000000000;
-	}
-	else {
-		res_time.tv_sec = etime.tv_sec - stime.tv_sec;
-		res_time.tv_nsec = etime.tv_nsec - stime.tv_nsec;
-	}
-	fdbg("elf_bind() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 	/* Return the load information */
 

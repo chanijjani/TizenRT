@@ -167,7 +167,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 //	ioctl(frt_fd, TCIOC_START, TRUE);
 
 	/* Read the relocation table into memory */
-	elf_readreltab(loadinfo, relsec);
+//	elf_readreltab(loadinfo, relsec);
 
 	/* Examine each relocation in the section.  'relsec' is the section
 	 * containing the relations.  'dstsec' is the section containing the data
@@ -280,7 +280,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 //	fdbg("elf_relocate() timediff -> (%lld.%09ld secs)\n", (long long)res_time.tv_sec, res_time.tv_nsec);
 
 ret_err:
-	kmm_free(loadinfo->reltab);
+//	kmm_free(loadinfo->reltab);
 	return ret;
 }
 
