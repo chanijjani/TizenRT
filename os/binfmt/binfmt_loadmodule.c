@@ -130,6 +130,7 @@ static int load_absmodule(FAR struct binary_s *bin)
 	FAR struct binfmt_s *binfmt;
 	int ret = -ENOENT;
 	struct timeval dump_start, dump_end;
+	struct timeval binfmt_start, binfmt_end;
 
 	binfo("Loading %s\n", bin->filename);
 
@@ -146,8 +147,12 @@ static int load_absmodule(FAR struct binary_s *bin)
 
 	for (binfmt = g_binfmts; binfmt; binfmt = binfmt->next) {
 		/* Use this handler to try to load the format */
-
+		gettimeofday(&binfmt_start, NULL);
 		ret = binfmt->load(bin);
+		gettimeofday(&binfmt_end, NULL);
+		printf("%s BINFMT time = %ld.%ld - %ld.%ld  \n", bin->filename,
+				binfmt_end.tv_sec, binfmt_end.tv_usec, binfmt_start.tv_sec, binfmt_start.tv_usec);
+
 		if (ret == OK) {
 			/* Successfully loaded -- break out with ret == 0 */
 

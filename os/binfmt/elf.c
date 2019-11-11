@@ -233,6 +233,7 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 {
 	struct elf_loadinfo_s loadinfo;	/* Contains globals for libelf */
 	int ret;
+	struct timeval bind_start, bind_end;
 
 	binfo("Loading file: %s\n", binp->filename);
 
@@ -266,12 +267,15 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	}
 
 	/* Bind the program to the exported symbol table */
-
+	gettimeofday(&bind_start, NULL);
 	ret = elf_bind(&loadinfo, binp->exports, binp->nexports);
 	if (ret != 0) {
 		berr("Failed to bind symbols program binary: %d\n", ret);
 		goto errout_with_load;
 	}
+	gettimeofday(&bind_end, NULL);
+	printf("\t%s elf_bind() time = %ld.%ld - %ld.%ld  \n", binp->filename,
+			bind_end.tv_sec, bind_end.tv_usec, bind_start.tv_sec, bind_start.tv_usec);
 
 	/* Return the load information */
 

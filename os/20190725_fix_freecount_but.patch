@@ -1,0 +1,32 @@
+diff --git os/fs/driver/mtd/smart.c os/fs/driver/mtd/smart.c
+index e5066a8e5..5df2dff57 100644
+--- os/fs/driver/mtd/smart.c
++++ os/fs/driver/mtd/smart.c
+@@ -3430,8 +3430,25 @@ retry:
+ 				/* Assign this block to alloc from. */
+ 
+ 				if (x < dev->neraseblocks - 1 || !allocfreecount) {
+-					allocblock = block;
+-					allocfreecount = count;
++					int sector;
++					int clean_sector = 0;
++					for (sector = block * dev->sectorsPerBlk; sector < block * dev->sectorsPerBlk + dev->availSectPerBlk; sector++) {
++						readaddr = sector * dev->mtdBlksPerSector * dev->geo.blocksize;
++						ret = MTD_READ(dev->mtd, readaddr, sizeof(struct smart_sect_header_s), (FAR uint8_t *)&header);
++						if (ret != sizeof(struct smart_sect_header_s)) {
++							fdbg("line %d, Error in reading physical sector %d\n", __LINE__, sector);
++							break;
++						}
++						if (UINT8TOUINT16(header.logicalsector) == 0xFFFF && !SECTOR_IS_COMMITTED(header)) {
++							clean_sector = 1;
++							break;
++						}
++					}
++					if (clean_sector) {
++						allocblock = block;
++						allocfreecount = count;
++						fvdbg("\t\tallocblock %d (availSectPerBlk = %d, count = %d) is selected!!\n", allocblock, dev->availSectPerBlk, count);
++					}
+ 				}
+ 			}
+ 		if (++block >= dev->neraseblocks) {

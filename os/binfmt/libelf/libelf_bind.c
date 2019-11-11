@@ -149,6 +149,7 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 	int symidx;
 	int ret;
 	int i;
+	struct timeval upre_start, upre_end;
 
 	/* Examine each relocation in the section.  'relsec' is the section
 	 * containing the relations.  'dstsec' is the section containing the data
@@ -213,12 +214,15 @@ static int elf_relocate(FAR struct elf_loadinfo_s *loadinfo, int relidx, FAR con
 		addr = dstsec->sh_addr + rel.r_offset;
 
 		/* Now perform the architecture-specific relocation */
-
+		gettimeofday(&upre_start, NULL);
 		ret = up_relocate(&rel, psym, addr);
 		if (ret < 0) {
 			berr("ERROR: Section %d reloc %d: Relocation failed: %d\n", relidx, i, ret);
 			return ret;
 		}
+		gettimeofday(&upre_end, NULL);
+		printf("\t%d up_relocate() time = %ld.%ld - %ld.%ld  \n", i,
+				upre_end.tv_sec, upre_end.tv_usec, upre_start.tv_sec, upre_start.tv_usec);
 	}
 
 	return OK;
@@ -254,6 +258,7 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 #endif
 	int ret;
 	int i;
+	struct timeval relo_start, relo_end;
 
 	/* Find the symbol and string tables */
 
@@ -303,12 +308,15 @@ int elf_bind(FAR struct elf_loadinfo_s *loadinfo, FAR const struct symtab_s *exp
 		}
 
 		/* Process the relocations by type */
-
+		gettimeofday(&relo_start, NULL);
 		if (loadinfo->shdr[i].sh_type == SHT_REL) {
 			ret = elf_relocate(loadinfo, i, exports, nexports);
 		} else if (loadinfo->shdr[i].sh_type == SHT_RELA) {
 			ret = elf_relocateadd(loadinfo, i, exports, nexports);
 		}
+		gettimeofday(&relo_end, NULL);
+		printf("\t%d elf_relocate() time = %ld.%ld - %ld.%ld  \n", i,
+				relo_end.tv_sec, relo_end.tv_usec, relo_start.tv_sec, relo_start.tv_usec);
 
 		if (ret < 0) {
 			break;
