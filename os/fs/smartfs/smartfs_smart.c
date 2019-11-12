@@ -69,9 +69,9 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <sys/time.h>
-#include <tinyara/timer.h>
-#include <fcntl.h>
+//#include <sys/time.h>
+//#include <tinyara/timer.h>
+//#include <fcntl.h>
 
 #include <tinyara/kmalloc.h>
 #include <tinyara/fs/fs.h>

@@ -238,10 +238,8 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	struct elf_loadinfo_s loadinfo;	/* Contains globals for libelf */
 	int ret;
 
-	struct timespec res_time;
-
-	struct timespec stime;
-	struct timespec etime;
+	struct timer_status_s bef;
+	struct timer_status_s aft;
 	struct timer_status_s before;
 	struct timer_status_s after;
 
@@ -274,7 +272,7 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	}
 
 	/* Load the program binary */
-	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&bef);
 
 	ret = elf_load(&loadinfo);
 //	elf_dumploadinfo(&loadinfo);
@@ -283,8 +281,8 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 		goto errout_with_init;
 	}
 
-	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
-	fdbg("elf_load() Load time = %u\n", after.timeleft - before.timeleft);
+	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&aft);
+	fdbg("elf_load() Load time = %u - %u = %u\n", aft.timeleft, bef.timeleft, aft.timeleft - bef.timeleft);
 
 	/* Bind the program to the exported symbol table */
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
@@ -296,7 +294,7 @@ static int elf_loadbinary(FAR struct binary_s *binp)
 	}
 
 	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
-	fdbg("elf_bind() Load time = %u\n", after.timeleft - before.timeleft);
+	fdbg("elf_bind() Load time = %u - %u = %u\n", after.timeleft, before.timeleft, after.timeleft - before.timeleft);
 
 	/* Return the load information */
 
