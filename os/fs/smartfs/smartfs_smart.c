@@ -1048,23 +1048,23 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 	off_t newpos;
 	off_t sectorstartpos;
 
-	struct timespec res_time;
+//	struct timespec res_time;
+//
+//	struct timespec stime;
+//	struct timespec etime;
+//	struct timer_status_s before;
+//	struct timer_status_s after;
 
-	struct timespec stime;
-	struct timespec etime;
-	struct timer_status_s before;
-	struct timer_status_s after;
-
-	int frt_fd = open("/dev/timer1", O_RDONLY);
-	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
-
-	ioctl(frt_fd, TCIOC_START, TRUE);
+//	int frt_fd = open("/dev/timer1", O_RDONLY);
+//	ioctl(frt_fd, TCIOC_SETFREERUN, TRUE);
+//
+//	ioctl(frt_fd, TCIOC_START, TRUE);
 
 #ifdef CONFIG_SMARTFS_DYNAMIC_HEADER
 	int sector_used = 0;
 #endif
 	/* Test if this is a seek to get the current file pos */
-	fdbg(" offset = %d\n", offset);
+//	fdbg(" offset = %d\n", offset);
 	if ((whence == SEEK_CUR) && (offset == 0)) {
 		return sf->filepos;
 	}
@@ -1131,7 +1131,7 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 		sf->filepos = 0;
 	}
 
-	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
+//	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&before);
 
 	header = (struct smartfs_chain_header_s *)fs->fs_rwbuffer;
 	while ((sf->currsector != SMARTFS_ERASEDSTATE_16BIT) && (sf->filepos + fs->fs_llformat.availbytes - sizeof(struct smartfs_chain_header_s) < newpos)) {
@@ -1159,7 +1159,7 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 		sf->currsector = SMARTFS_NEXTSECTOR(header);
 	}
 
-	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
+//	ioctl(frt_fd, TCIOC_GETSTATUS, (unsigned long)(uintptr_t)&after);
 
 #ifdef CONFIG_SMARTFS_USE_SECTOR_BUFFER
 
@@ -1185,9 +1185,9 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs, struct smartfs_
 	sf->curroffset = sizeof(struct smartfs_chain_header_s) + newpos - sf->filepos;
 	sf->filepos = newpos;
 
-	fdbg("while + read time = %u - %u = %u,  ret = %d\n", after.timeleft, before.timeleft, after.timeleft - before.timeleft, newpos);
-	ioctl(frt_fd, TCIOC_STOP, TRUE);
-	close(frt_fd);
+//	fdbg("while + read time = %u - %u = %u,  ret = %d\n", after.timeleft, before.timeleft, after.timeleft - before.timeleft, newpos);
+//	ioctl(frt_fd, TCIOC_STOP, TRUE);
+//	close(frt_fd);
 
 	return newpos;
 

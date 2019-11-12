@@ -243,7 +243,7 @@ int binary_manager_load_binary(int bin_idx)
 		while (retry_count < BINMGR_LOADING_TRYCNT) {
 			ret = load_binary(bin_idx, devname, &load_attr);
 			if (ret > 0) {
-				bmvdbg("Load '%s' success! pid = %d\n", devname, ret);
+//				fdbg("Load '%s' success! pid = %d\n", devname, ret);
 				/* Set the data in table from header */
 				BIN_USEIDX(bin_idx) = latest_idx;
 				BIN_LOAD_ATTR(bin_idx) = load_attr;
@@ -257,7 +257,7 @@ int binary_manager_load_binary(int bin_idx)
 				usleep(1000);
 			}
 			retry_count++;
-			bmdbg("Load '%s' %dth fail, errno %d\n", BIN_NAME(bin_idx), retry_count, errno);
+			fdbg("Load '%s' %dth fail, errno %d\n", BIN_NAME(bin_idx), retry_count, errno);
 		}
 
 		if (--valid_bin_count > 0) {

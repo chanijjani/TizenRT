@@ -61,7 +61,7 @@ ln -sf $BASE_INCLUDE_DIR/queue.h $DEST_INLCUDE_DIR/queue.h
 ln -sf $BASE_INCLUDE_DIR/sys/statfs.h $DEST_INLCUDE_DIR/sys/statfs.h
 ln -sf $BASE_INCLUDE_DIR/tinyara/math.h $DEST_INLCUDE_DIR/tinyara/math.h
 ln -sf $BASE_INCLUDE_DIR/tinyara/mqueue.h $DEST_INLCUDE_DIR/tinyara/mqueue.h
-ln -sf $BASE_INCLUDE_DIR/tinyara/fs/mtd.h $DEST_INLCUDE_DIR/tinyara/fs/mtd.h
+ln -sf $DEST_INLCUDE_DIR/tinyara/nxfuse_mtd.h $DEST_INLCUDE_DIR/tinyara/fs/mtd.h
 ln -sf $DEST_INLCUDE_DIR/tinyara/nxfuse_kmalloc.h $DEST_INLCUDE_DIR/tinyara/kmalloc.h
 ln -sf $BASE_INCLUDE_DIR/tinyara/fs/smart.h $DEST_INLCUDE_DIR/tinyara/fs/smart.h
 ln -sf $BASE_INCLUDE_DIR/tinyara/fs/smart_procfs.h $DEST_INLCUDE_DIR/tinyara/fs/smart_procfs.h
