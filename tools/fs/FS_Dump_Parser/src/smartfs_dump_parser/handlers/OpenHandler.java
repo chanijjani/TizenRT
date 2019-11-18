@@ -8,7 +8,8 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
-import smartfs_dump_parser.parts.DumpViewer;
+import smartfs_dump_parser.parts.DirectoryViewer;
+import smartfs_dump_parser.parts.SectorViewer;
 import smartfs_dump_visualizer.controllers.SmartFSOrganizer;
 
 public class OpenHandler {
@@ -24,12 +25,14 @@ public class OpenHandler {
 			String fileName = dialog.getFileName();
 			System.out.println("filename = " + fileName);
 
-			MPart mpart = partService.findPart("SmartFS_Dump_Parser.part.sample");
-			DumpViewer dv = (DumpViewer) mpart.getObject();
+			MPart directory_part = partService.findPart("smartfs_dump_parser.part.directory_structure");
+			DirectoryViewer dv = (DirectoryViewer) directory_part.getObject();
+			MPart sector_part = partService.findPart("smartfs_dump_parser.part.sector_list");
+			SectorViewer sv = (SectorViewer) sector_part.getObject();
 
-			if (SmartFSOrganizer.organizeSmartFS(filePath, fileName)) {
-				dv.getTableViewer().refresh();
+			if (SmartFSOrganizer.organizeSmartFS(filePath, fileName)) {				
 				dv.getDirectoryViewer().refresh();
+				sv.getSectorViewer().refresh();
 			}
 		}
 	}

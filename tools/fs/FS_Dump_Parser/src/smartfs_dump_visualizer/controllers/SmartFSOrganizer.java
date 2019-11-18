@@ -24,10 +24,7 @@ public class SmartFSOrganizer {
 			FileInputStream fis = new FileInputStream(new File(filePath, fileName));
 			int sectorId = 0;
 			while (fis.read(buffer) > 0) {
-				SmartFSOrganizer.addSector(sectorId, buffer);
-				if (sectorId == 0 || sectorId == 3) {
-					System.out.println(printSector(buffer, sectorId));
-				}
+				SmartFSOrganizer.addSector(sectorId, buffer);				
 				sectorId++;
 				buffer = new byte[SmartFileSystem.getSectorSize()];
 			}
@@ -52,24 +49,31 @@ public class SmartFSOrganizer {
 		sector.setHeader(header);
 		SmartFileSystem.getSectors().add(sector);
 
+		if (SmartFileSystem.isRootLogicalSector(logicalSectorId)) {
+			System.out.println(printSector(sectorData, logicalSectorId));
+		}
+		
 		byte statusValue = sectorData[4];
 		if (SmartFileSystem.isActiveSector(statusValue)) {
 			SmartFileSystem.getActiveSectors().add(sector);
 
 			if (SmartFileSystem.isSignatureLogicalSector(logicalSectorId)) {
 				SmartFileSystem.setValidSmartFS(true);
+				System.out.println(printSector(sectorData, logicalSectorId));
 			} else if (SmartFileSystem.isRootLogicalSector(logicalSectorId)) {
 				List<Sector> sectorList = new ArrayList<Sector>();
 				sectorList.add(sector);
 				SmartFile rootDir = new SmartFile(SmartFileSystem.getSmartFSRoot(), EntryType.DIRECTORY, null,
 						sectorList);
 				SmartFileSystem.setRootDirectory(rootDir);
+				System.out.println(printSector(sectorData, logicalSectorId));
 			}
 		} else if (SmartFileSystem.isDirtySector(statusValue)) {
 			SmartFileSystem.getDirtySectors().add(sector);
 		} else {
+			// TODO: Validate whether this sector is clean or corrupted. 
 			SmartFileSystem.getCleanSectors().add(sector);
-		}
+		}		
 	}
 
 	private static int makePositiveValue(byte value) {
