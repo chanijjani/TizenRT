@@ -1,0 +1,11 @@
+#
+# For a description of the syntax of this configuration file,
+# see kconfig-language at https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt
+#
+
+config EXAMPLES_TESTCASE_DATABASE_UTC
+	bool "Database UTC TestCase Example"
+	select DATABASE
+	default n
+	---help---
+		Enable the Database TestCase example
