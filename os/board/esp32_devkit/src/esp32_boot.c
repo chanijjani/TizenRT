@@ -92,6 +92,9 @@ extern int esp_spiram_init();
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
+#if defined(CONFIG_BOARD_CRASHDUMP) && defined(CONFIG_BOARD_SMARTFS_DUMP)
+extern void smartfsdump_init(void);
+#endif
 
 /************************************************************************************
  * Name: esp32_board_initialize
@@ -244,5 +247,8 @@ void board_initialize(void)
 	board_adc_initialize();
 #endif
 
+#if defined(CONFIG_BOARD_CRASHDUMP) && defined(CONFIG_BOARD_SMARTFS_DUMP)
+	smartfsdump_init();
+#endif
 }
 #endif

@@ -85,6 +85,19 @@
  * Private Functions
  ****************************************************************************/
 
+/* I don't know if the builtin to get SP is enabled */
+
+static inline uint32_t up_getsp(void)
+{
+	uint32_t sp;
+	__asm__
+	(
+		"\tmov %0, sp\n\t"
+		: "=r"(sp)
+	);
+	return sp;
+}
+
 /****************************************************************************
  * Name: assert_tracecallback
  ****************************************************************************/
@@ -132,7 +145,7 @@ static void xtensa_assert(int errorcode)
 #ifdef CONFIG_BOARD_CRASHDUMP
 	/* Perform board-specific crash dump */
 
-	board_crashdump(up_getsp(), this_task(), filename, lineno);
+	board_crashdump(up_getsp(), this_task(), NULL, 0);
 #endif
 
 	/* Are we in an interrupt handler or the idle task? */

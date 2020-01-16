@@ -58,6 +58,10 @@ ASRCS =
 CSRCS = esp32_boot.c esp32_bringup.c esp32_led.c
 CSRCS += partitions.c
 
+ifeq ($(CONFIG_BOARD_CRASHDUMP),y)
+CSRCS += crashdump.c
+endif
+
 ifeq ($(CONFIG_LIB_BOARDCTL),y)
 CSRCS += esp32_appinit.c
 endif

@@ -900,9 +900,10 @@ uint32_t mtd_getpartitionsize(int index, uint32_t *offset)
 		int partsize;
 
 		partsize = strtoul(parts, NULL, 0) << 10;
-		fdbg("\tpartoffset = 0x%x, partsize = %d\n", partoffset, partsize);
+		printf("\tpartoffset = 0x%x, partsize = %d\n", partoffset, partsize);
 		if (cnt++ == index) {
 			*offset = partoffset;
+			printf("Let's return..\n");
 			return partsize;
 		}
 		partoffset = partoffset + partsize;

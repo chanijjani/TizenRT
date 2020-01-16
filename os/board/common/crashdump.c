@@ -29,11 +29,14 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef ARCH_CHIP_S5J
 #include <chip.h>
+#endif
 #include <arch/board/board.h>
+#ifdef CONFIG_ARCH_ARM
 #include "up_internal.h"
 #include "up_watchdog.h"
-
+#endif
 #include <tinyara/mm/heap_regioninfo.h>
 #include <tinyara/mm/mm.h>
 
@@ -57,8 +60,8 @@
 #endif
 
 #if defined(CONFIG_BOARD_SMARTFS_DUMP)
-#define SDV_HANDSHAKE_STRING	"DUMPSDV"
-#define SDV_HANDSHAKE_STR_LEN	7
+#define SDV_HANDSHAKE_STRING	"DUMPFS"
+#define SDV_HANDSHAKE_STR_LEN	6
 #endif
 
 /****************************************************************************
@@ -96,7 +99,7 @@ static uint32_t smartfsdump_partsize = 0;
  * Private Functions
  ****************************************************************************/
 
-#if defined(CONFIG_BOARD_COREDUMP_FLASH)
+#if defined(CONFIG_BOARD_COREDUMP_FLASH) && defined(CONFIG_ARCH_ARM)
 static int coredump_to_flash(uint32_t cur_sp, void *tcb)
 {
 	uint32_t *ptr;
@@ -320,6 +323,9 @@ static int ramdump_via_uart(void)
 void print_sector(char *buf, int size) {
 	for (register int i = 0; i < size/16; i++) {
 		for (register int j = 0; j < 16; j++) {
+//			char value = 0;
+//			memcpy(&value, buf + i * 16 + j, sizeof(char));
+//			printf("%02x ", value);
 			printf("%02x ", buf[i * 16 + j]);
 		}
 		printf("\n");
@@ -335,6 +341,7 @@ static int smartfs_dump(void)
 	int totalsectors = smartfsdump_partsize / CONFIG_MTD_SMART_SECTOR_SIZE;
 	char *sector_buf;
 	int offset = CONFIG_FLASH_START_ADDR + smartfsdump_partoffset;
+//	int offset = 0x00300000;
 
 #if !defined(CONFIG_ARCH_LOWPUTC)
 	/* If low-level serial is not available, smartfs_dump is not possible */
@@ -352,23 +359,40 @@ static int smartfs_dump(void)
 	} while (handshake_msg_buf[0] != handshake_str[0]);
 
 	for (i = 1; i < strlen(handshake_str);) {
+//		printf("i = %d\t", i);
 		ch = up_getc();
+//		printf("ch = %d, %c\n", ch, ch);
 		if (ch != -1) {
 			handshake_msg_buf[i] = ch;
 			i++;
 		}
 	}
 	handshake_msg_buf[SDV_HANDSHAKE_STR_LEN] = '\n';
-
+	fvdbg("RECV MSG = %s, len = %d\n\n", handshake_msg_buf, strlen(handshake_str));
 	if (strncmp(handshake_msg_buf, handshake_str, strlen(handshake_str)) != 0) {
 		fdbg("\tHandshake MSG is wrong... len = %d, %s\n", strlen(handshake_str), handshake_msg_buf);
 		return -1;
 	}
-	fvdbg("\t\t\tHandshake msg is received.  Start transmission.. for %d sectors, offset = 0x%x\n", totalsectors, offset);
+	fvdbg("\t\t\toffset = 0x%x, Handshake msg is received.  Start transmission.. for %d sectors, smartfsdump_partoffset = %d\n",
+			offset, totalsectors, smartfsdump_partoffset);
 
 	sector_buf = (char *)malloc(sizeof(char) * CONFIG_MTD_SMART_SECTOR_SIZE);
 	for (register int s=0; s<totalsectors; s++) {
+//		char buf[CONFIG_MTD_SMART_SECTOR_SIZE];
+//		memcpy(buf, (void *)offset, CONFIG_MTD_SMART_SECTOR_SIZE);
+//		print_sector(buf, CONFIG_MTD_SMART_SECTOR_SIZE);
+#ifdef CONFIG_ARCH_XTENSA
+		ssize_t result;
+		char buf[CONFIG_MTD_SMART_SECTOR_SIZE];
+		result = esp32_flash_read(offset, buf, CONFIG_MTD_SMART_SECTOR_SIZE);
+		if (result < 0) {
+			return -1;
+		}
+//		printf("%d %d %d %d %d %d \n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+		print_sector(buf, CONFIG_MTD_SMART_SECTOR_SIZE);
+#else
 		print_sector((char *)offset, CONFIG_MTD_SMART_SECTOR_SIZE);
+#endif
 		offset += CONFIG_MTD_SMART_SECTOR_SIZE;
 	}
 
@@ -419,7 +443,7 @@ void crashdump_init(void)
 void smartfsdump_init(void)
 {
 	int index = mtd_getpartitionindex("userfs");
-	fdbg("SmartFS partition index = %d\n", index);
+//	fdbg("SmartFS partition index = %d\n", index);
 	if (index >= 0) {
 		snprintf(smartfsdump_partname, MTD_PARTNAME_LEN + 1, "/dev/mtdblock%d", index);
 		smartfsdump_partsize = mtd_getpartitionsize(index, &smartfsdump_partoffset);

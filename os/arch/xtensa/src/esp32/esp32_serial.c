@@ -101,14 +101,17 @@
 #define CONSOLE_DEV         g_uart0port	/* UART0 is console */
 #define TTYS0_DEV           g_uart0port	/* UART0 is ttyS0 */
 #define UART0_ASSIGNED      1
+#define HAVE_SERIAL_CONSOLE
 #elif defined(CONFIG_UART1_SERIAL_CONSOLE)
 #define CONSOLE_DEV         g_uart1port	/* UART1 is console */
 #define TTYS0_DEV           g_uart1port	/* UART1 is ttyS0 */
 #define UART1_ASSIGNED      1
+#define HAVE_SERIAL_CONSOLE
 #elif defined(CONFIG_UART2_SERIAL_CONSOLE)
 #define CONSOLE_DEV         g_uart2port	/* UART2 is console */
 #define TTYS0_DEV           g_uart2port	/* UART2 is ttyS0 */
 #define UART2_ASSIGNED      1
+#define HAVE_SERIAL_CONSOLE
 #else
 #undef CONSOLE_DEV				/* No console */
 #if defined(CONFIG_ESP32_UART0)
@@ -1174,6 +1177,24 @@ void xtensa_serial_initialize(void)
 	(void)uart_register("/dev/ttyS2", &TTYS2_DEV);
 #endif
 
+}
+
+int up_getc(void)
+{
+#ifdef HAVE_SERIAL_CONSOLE
+	int status;
+	int ret;
+	uint32_t intena;
+
+	esp32_disableallints(CONSOLE_DEV.priv, &intena);
+
+    while(!esp32_rxavailable(&CONSOLE_DEV));
+    ret = esp32_receive(&CONSOLE_DEV, &status);
+
+	esp32_restoreuartint(CONSOLE_DEV.priv, intena);
+
+    return ret;
+#endif
 }
 
 /****************************************************************************

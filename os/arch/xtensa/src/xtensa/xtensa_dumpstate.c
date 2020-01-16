@@ -134,7 +134,7 @@ static void xtensa_stackdump(uint32_t sp, uint32_t stack_base)
 	uint32_t stack;
 	for (stack = sp & ~0x1f; stack < stack_base; stack += 32) {
 		uint32_t *ptr = (uint32_t *)stack;
-		lldbg("%08x: %08x %08x %08x %08x %08x %08x %08x %08x\n", stack, *ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4), *(ptr+5), *(ptr+6), *(ptr+7));
+//		lldbg("%08x: %08x %08x %08x %08x %08x %08x %08x %08x\n", stack, *ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4), *(ptr+5), *(ptr+6), *(ptr+7));
 	}
 #endif
 }

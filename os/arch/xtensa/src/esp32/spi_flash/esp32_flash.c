@@ -178,7 +178,7 @@ ssize_t esp32_flash_read(size_t addr, void *buf, size_t count)
             uint32_t offset = addr & 0x3;
             int8_t *aligned_read_buf = (int8_t *)kmm_malloc(count + offset);
             if (aligned_read_buf == NULL) {
-                printf("[esp32] up_progmem_read: fail to alloc memory\n");
+//                printf("[esp32] up_progmem_read: fail to alloc memory\n");
                 ret = -EPERM;
             } else {
                 result = spi_flash_read((addr & 0xfffffffc), (char *)aligned_read_buf, count + offset);
@@ -196,7 +196,7 @@ ssize_t esp32_flash_read(size_t addr, void *buf, size_t count)
     irqrestore(irqs);
 
     if (ret < 0) {
-        printf("[esp32] up_progmem_read Errno: %d, addr %d, buf %p, count %d\n", ret, addr, buf, count);
+//        printf("[esp32] up_progmem_read Errno: %d, addr %d, buf %p, count %d\n", ret, addr, buf, count);
     }
     return ret;
 }

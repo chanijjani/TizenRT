@@ -148,7 +148,7 @@ VPATH += $(ARCH_SUBDIR)
 
 all: $(STARTUP_OBJS) libarch$(LIBEXT)
 
-.PHONY: board/libboard$(LIBEXT)
+.PHONY: board$(DELIM)libboard$(LIBEXT)
 
 $(AOBJS) $(HEAD_AOBJ): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
@@ -159,8 +159,8 @@ $(COBJS) $(HEAD_COBJ): %$(OBJEXT): %.c
 libarch$(LIBEXT): $(OBJS)
 	$(call ARCHIVE, $@, $(OBJS))
 
-board/libboard$(LIBEXT):
-	$(Q) $(MAKE) -C board TOPDIR="$(TOPDIR)" all EXTRADEFINES=$(EXTRADEFINES)
+board$(DELIM)libboard$(LIBEXT):
+	$(Q) $(MAKE) -C board TOPDIR="$(TOPDIR)" libboard$(LIBEXT) EXTRADEFINES=$(EXTRADEFINES)
 
 $(OUTBIN_DIR)/tinyara$(EXEEXT): $(STARTUP_OBJS) board/libboard$(LIBEXT)
 	$(Q) echo "LD: tinyara"
